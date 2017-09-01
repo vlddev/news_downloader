@@ -1,6 +1,9 @@
 import re
 from collections import Counter
 
+# TODO use https://bitbucket.org/spirit/guess_language
+#      for language detection
+
 class TextStats(object):
   def __init__(self, text):
     self.text = text
@@ -59,4 +62,3 @@ class TextStats(object):
       return True
     else:
       return False
-

@@ -1,3 +1,4 @@
+# use https://scipy.org/ ???
 from pylab import *
 from numpy import NaN
 
