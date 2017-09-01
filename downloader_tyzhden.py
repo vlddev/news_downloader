@@ -189,7 +189,7 @@ class Downloader(object):
     cmd = (downloader_common.XIDEL_CMD.format(url) +
            ' --xpath \'//table[@class="ap6"]//div[@class="bf4"]/span[1]\'' #date
            ' --xpath \'//h1[@class="ap5"]\'' #title
-           ' --xpath \'//div[@class="bf3 ap1 _ga1_on_" or @class="bf3 ap2 _ga1_on_"]\'' #article text
+           ' --xpath \'//div[@class="bf3 ap1 _ga1_on_" or @class="bf3 ap2 _ga1_on_" or @class="bf3 ap1 _ga1_on_ io-article-body" or @class="bf3 ap2 _ga1_on_ io-article-body"]\'' #article text
            ' --xpath \'//div[@class="bf1"]\'' #article summary
            ' --xpath \'//table[@class="ap6"]//div[@class="bf4"]/span[3]\'' #author [optional]
            ' --xpath \'//table[@class="ap6"]//div[@class="bf3 ap4"]\'' #author 2 [optional]
@@ -301,9 +301,9 @@ downloader = Downloader()
 logging.basicConfig(filename='downloader_tyzh.log',level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-num = 494
+num = 502
 
-while (num < 499): #last 488
+while (num < 512): #last 488
   try:
     content = downloader.fb2(num)
     if len(content) > 0:

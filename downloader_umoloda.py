@@ -247,9 +247,9 @@ downloader = Downloader()
 logging.basicConfig(filename='downloader_um.log',level=logging.INFO,
             format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-num = 3132 #2016 -
+num = 3170 #2016 -
 
-while (num < 3170):
+while (num < 3206):
   content = downloader.fb2(num)
   if len(content) > 0:
     with open(downloader_common.rootPath+'/umoloda/'+str(downloader.numDate.year)+'/umoloda_'+str(num)+'.fb2', "w") as fb2_file:

@@ -299,7 +299,7 @@ downloader = Downloader(downloader_common.rootPath)
 logging.basicConfig(filename='downloader_molbuk.log',level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-dateTo = datetime.datetime.strptime('05.03.2017', '%d.%m.%Y').date()
+dateTo = datetime.datetime.strptime('01.06.2017', '%d.%m.%Y').date()
 
 # download articles from today until dateTo
 downloader.getNewsPerPage(1, dateTo)

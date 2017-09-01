@@ -1,4 +1,5 @@
-import sys, traceback
+import sys
+import traceback
 import datetime
 import subprocess
 import json
@@ -7,6 +8,7 @@ from bs4 import BeautifulSoup
 import stats
 import re
 import downloader_common
+
 
 def run():
     rootPath = '/home/vlad/Dokumente/python/news_lib'

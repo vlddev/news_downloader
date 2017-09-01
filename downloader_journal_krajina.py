@@ -256,9 +256,9 @@ downloader = Downloader()
 logging.basicConfig(filename='downloader_journal_krajina.log',level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-num =363 #2016 -
+num =375 #2016 -
 
-while (num < 375): #343
+while (num < 387): #343
   content = downloader.fb2(num)
   if len(content) > 0:
     with open(downloader_common.rootPath+'/j_krajina/'+str(downloader.numDate.year)+'/j_krajina_'+str(num)+'.fb2', "w") as fb2_file:
