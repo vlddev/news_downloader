@@ -7,8 +7,8 @@ rootPath = '/home/vlad/Dokumente/python/news_lib'
 def relpaceHtmlEntities(val):
   if val is not None and isinstance(val, str):
     repls = (('&#39;', '\''), ('&quot;', '"'), ('&hellip;', '…'), ('&nbsp;', ' '), ('&ndash;', '–'),
-        ('&mdash;', '–'), ('&rsquo;', '\''), ('&lsquo;', '\''), ('&apos;', '\''), ('','\''),
-        ('&#8203;','')
+        ('&mdash;', '–'), ('&rsquo;', '\''), ('&lsquo;', '\''), ('&apos;', '\''), ('&acute;', '\''),
+        ('', '\''), ('&#8203;', ''), ('&bdquo;', '"'), ('&amp;', '&')
     )
     #return val.replace('&#39;', '\'').replace('&quot;', '"').replace('&hellip;', '…').replace('&nbsp;', ' ').replace('&ndash;', '–').replace('&mdash;', '–').
     #        replace('&rsquo;', '\'').replace('&apos;','\'').replace('','\'')

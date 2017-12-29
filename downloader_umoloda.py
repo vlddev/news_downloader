@@ -1,4 +1,6 @@
 import sys, traceback
+import os
+import os.path
 import datetime
 import subprocess
 import json
@@ -6,6 +8,29 @@ import logging
 from bs4 import BeautifulSoup
 import stats
 import downloader_common
+
+
+def run():
+    downloader = Downloader()
+
+    logging.basicConfig(filename='downloader_um.log', level=logging.INFO,
+            format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    # get last downloaded number
+    num = downloader.getLastDownloadedIssueNr() + 1
+
+    # get current issue number (https://dt.ua/gazeta/issue/1129)
+    currentIssueNum = downloader.getCurrentIssueNr()
+    print ("download issues from {0} to {1}".format(num, currentIssueNum))
+    logging.info("download issues from {0} to {1}".format(num, currentIssueNum))
+
+    while (num <= currentIssueNum):
+        content = downloader.fb2(num)
+        if len(content) > 0:
+            with open(downloader_common.rootPath+'/umoloda/'+str(downloader.numDate.year)+'/umoloda_'+str(num)+'.fb2', "w") as fb2_file:
+                fb2_file.write(content)
+        num += 1
+
 
 class Article(object):
   def __init__(self, url, j):
@@ -241,20 +266,69 @@ class Downloader(object):
     ret += '\n</FictionBook>'
     return ret
 
-downloader = Downloader()
-#logging.basicConfig(filename='downloader_um_debug.log',level=logging.DEBUG)
+  def getCurrentIssueNr(self):
+    curIssueNr = -1
+    url = self.baseUrl
+    curIssueCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@id="main"]//div[@class="col-xs-12 col-sm-6 col-md-3 rightsidebarBanner"]//div[@class="titlePdf"]//a/@href\''
+    cmd = curIssueCmd.format(url)
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    for ln in p.stdout:
+      line = ln.decode('utf-8').strip()
+      if len(line) > 0 and line.startswith('/number/'):
+          curIssueNr = int(''.join(ele for ele in line if ele.isdigit())) - 1
 
-logging.basicConfig(filename='downloader_um.log',level=logging.INFO,
-            format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+    return curIssueNr
 
-num = 3170 #2016 -
+  def getLastDownloadedIssueNr(self):
+    now = datetime.datetime.now()
+    curYearFolder = downloader_common.rootPath+'/umoloda/'+str(now.year)
+    prevYearFolder = downloader_common.rootPath+'/umoloda/'+str(now.year-1)
+    lastIssueFolder = downloader_common.rootPath+'/umoloda'
+    if os.path.isdir(curYearFolder): #folder for current year exists
+        lastIssueFolder = curYearFolder
+    elif os.path.isdir(curYearFolder): #folder for previous year exists:
+        lastIssueFolder = prevYearFolder
+    else:
+        return 1
 
-while (num < 3206):
-  content = downloader.fb2(num)
-  if len(content) > 0:
-    with open(downloader_common.rootPath+'/umoloda/'+str(downloader.numDate.year)+'/umoloda_'+str(num)+'.fb2', "w") as fb2_file:
-      fb2_file.write(content)
-  num += 1
+    lastIssueNr = 1
+    for issueFile in os.listdir(lastIssueFolder):
+        if issueFile.endswith(".fb2"):
+            curIssueNr = int(''.join(ele for ele in issueFile[:-3] if ele.isdigit()))
+            if curIssueNr > lastIssueNr:
+                lastIssueNr = curIssueNr
+
+    return lastIssueNr
+
+  def load(self):
+    # get last downloaded number
+    num = self.getLastDownloadedIssueNr() + 1
+
+    currentIssueNum = self.getCurrentIssueNr()
+    print ("download issues from {0} to {1}".format(num, currentIssueNum))
+    logging.info("download issues from {0} to {1}".format(num, currentIssueNum))
+
+    now = datetime.datetime.now()
+    year = now.year
+
+    # for num in strNumList
+    while (num <= currentIssueNum):
+      try:
+        content = self.fb2(num)
+        if len(content) > 0:
+            with open((downloader_common.rootPath+'/umoloda/'+"%d/umoloda_%03d.fb2" % (year, num)), "w") as fb2_file:
+                fb2_file.write(content)
+        else:
+            print("No content for num %d, year %d." % (num, year))
+            logging.warning("No content for num %d, year %d." % (num, year))
+      except KeyboardInterrupt:
+        sys.exit("Download interrrupted.")
+      except:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        traceback.print_exception(exc_type, exc_value, exc_traceback)
+        sys.exit("Unexpected error:  "+ exc_type)
+      num += 1
+    logging.info("Job completed")
 
 
 """
@@ -270,3 +344,6 @@ if textStats.isRus():
   print("this is Rusian text")
 
 """
+
+if __name__ == '__main__':
+    run()

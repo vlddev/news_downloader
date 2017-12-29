@@ -301,9 +301,9 @@ downloader = Downloader()
 logging.basicConfig(filename='downloader_tyzh.log',level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-num = 502
+num = 522
 
-while (num < 512): #last 488
+while (num < 529): #last 488
   try:
     content = downloader.fb2(num)
     if len(content) > 0:

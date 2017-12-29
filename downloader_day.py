@@ -10,6 +10,116 @@ from bs4 import BeautifulSoup
 import stats
 import downloader_common
 
+def run():
+    downloader = Downloader()
+
+    logging.basicConfig(filename='downloader_day.log',level=logging.INFO,
+            format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    # get last downloaded number
+    num = downloader.getLastDownloadedIssueNr() + 1
+
+    # get current issue number (https://dt.ua/gazeta/issue/1129)
+    currentIssueNum = downloader.getCurrentIssueNr()
+    print ("download issues from {0} to {1}".format(num, currentIssueNum))
+    logging.info("download issues from {0} to {1}".format(num, currentIssueNum))
+
+    now = datetime.datetime.now()
+    year = now.year
+
+    #for num in strNumList
+    while (num <= currentIssueNum): #253
+      try:
+        fname = ("%d/day_%03d.fb2" % (year, num))
+        if os.path.isfile(fname):
+            print ("File %s exists, get next." % fname)
+        else:
+            content = downloader.fb2(num, year)
+            if len(content) > 0:
+                with open((downloader_common.rootPath+'/day/'+"%d/day_%03d.fb2" % (year, num)), "w") as fb2_file:
+                    fb2_file.write(content)
+            else:
+                print("No content for num %d, year %d." % (num, year))
+                logging.warning("No content for num %d, year %d." % (num, year))
+      except KeyboardInterrupt:
+        sys.exit("Download interrrupted.")
+      except:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        traceback.print_exception(exc_type, exc_value, exc_traceback)
+        sys.exit("Unexpected error:  "+ exc_type)
+      num += 1
+
+def runWithParams():
+    downloader = Downloader()
+
+    #2017 96 154
+    year = int(sys.argv[1])
+    num = int(sys.argv[2]) #2016 -
+    lastNum = int(sys.argv[3])+1
+
+    #while (num < lastNum): #253
+    #    strNumList.append(str(num))
+    #    num += 1
+
+    #strNumList = ['238-240','235-236','230-231','225-226','220-221','215-216','210-211','205-206','200-201','195-196','190-191','185-186',
+    #    '181-182','176-177','171-172','166-167','161-162','156-157','151-152','148-149','143-144','138-139','133-134']
+
+    logging.basicConfig(filename='downloader_day_'+str(year)+'.log',level=logging.INFO,
+            format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    #for num in strNumList
+    while (num < lastNum): #253
+      try:
+        fname = ("%d/day_%03d.fb2" % (year, num))
+        if os.path.isfile(fname):
+            print ("File %s exists, get next." % fname)
+        else:
+            content = downloader.fb2(num, year)
+            if len(content) > 0:
+                with open((downloader_common.rootPath+'/day/'+"%d/day_%03d.fb2" % (year, num)), "w") as fb2_file:
+                    fb2_file.write(content)
+            else:
+                print("No content for num %d, year %d." % (num, year))
+                logging.warning("No content for num %d, year %d." % (num, year))
+      except KeyboardInterrupt:
+        sys.exit("Download interrrupted.")
+      except:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        traceback.print_exception(exc_type, exc_value, exc_traceback)
+        sys.exit("Unexpected error:  "+ exc_type)
+      num += 1
+
+def runUrl():
+    downloader = Downloader()
+
+    logging.basicConfig(filename='downloader_day.log',level=logging.INFO,
+            format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    noUrlPart = 'no65-2016-0'
+    content = downloader.fb2ForUrl(noUrlPart)
+    if len(content) > 0:
+        with open(("2017/%s.fb2" % (noUrlPart)), "w") as fb2_file:
+            fb2_file.write(content)
+    else:
+        print("No content for num %d, year %d." % (num, year))
+        logging.warning("No content for num %d, year %d." % (num, year))
+
+def test():
+    downloader = Downloader()
+
+    logging.basicConfig(filename='downloader_day_test.log',level=logging.INFO,
+        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    article = downloader.loadArticle('https://day.kyiv.ua/uk/article/media/mafiya-bezsmertna-y-na-ekrani')
+    print(article.info())
+
+    """
+    logging.basicConfig(filename='downloader_day_debug.log',level=logging.DEBUG)
+    #downloader.getNewsForNumber(35,1997)
+    article = downloader.loadArticle('https://day.kyiv.ua/uk/article/media/mafiya-bezsmertna-y-na-ekrani')
+    print(article.info())
+    """
+
 class Article(object):
   def __init__(self, url, j):
     self.url = ''
@@ -450,38 +560,61 @@ class Downloader(object):
     ret += '\n</FictionBook>'
     return ret
 
-def run():
-    downloader = Downloader()
+  def getCurrentIssueNr(self):
+    curIssueNr = -1
+    url = self.baseUrl + '/uk/newspaper'
+    curIssueCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="region-inner region-content-inner"]//div[@class="view-content"]//h3//a/@href\''
+    cmd = curIssueCmd.format(url)
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    for ln in p.stdout:
+      line = ln.decode('utf-8').strip()
+      if len(line) > 0 and line.startswith('/uk/arhiv/no'):
+          curIssueNr = int(''.join(ele for ele in line.split('-')[0] if ele.isdigit()))
 
-    #2017 96 154
-    year = int(sys.argv[1])
-    num = int(sys.argv[2]) #2016 -
-    lastNum = int(sys.argv[3])+1
+    return curIssueNr
 
-    #while (num < lastNum): #253
-    #    strNumList.append(str(num))
-    #    num += 1
+  def getLastDownloadedIssueNr(self):
+    now = datetime.datetime.now()
+    curYearFolder = downloader_common.rootPath+'/day/'+str(now.year)
+    prevYearFolder = downloader_common.rootPath+'/day/'+str(now.year-1)
+    lastIssueFolder = downloader_common.rootPath+'/day'
+    if os.path.isdir(curYearFolder): #folder for current year exists
+        lastIssueFolder = curYearFolder
+    elif os.path.isdir(curYearFolder): #folder for previous year exists:
+        lastIssueFolder = prevYearFolder
+    else:
+        return 1
 
-    #strNumList = ['238-240','235-236','230-231','225-226','220-221','215-216','210-211','205-206','200-201','195-196','190-191','185-186',
-    #    '181-182','176-177','171-172','166-167','161-162','156-157','151-152','148-149','143-144','138-139','133-134']
+    lastIssueNr = 1
+    for issueFile in os.listdir(lastIssueFolder):
+        if issueFile.endswith(".fb2"):
+            curIssueNr = int(''.join(ele for ele in issueFile[:-3] if ele.isdigit()))
+            if curIssueNr > lastIssueNr:
+                lastIssueNr = curIssueNr
 
-    logging.basicConfig(filename='downloader_day_'+str(year)+'.log',level=logging.INFO,
-            format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+    return lastIssueNr
+
+  def load(self):
+    # get last downloaded number
+    num = self.getLastDownloadedIssueNr() + 1
+
+    currentIssueNum = self.getCurrentIssueNr()
+    print ("download issues from {0} to {1}".format(num, currentIssueNum))
+    logging.info("download issues from {0} to {1}".format(num, currentIssueNum))
+
+    now = datetime.datetime.now()
+    year = now.year
 
     #for num in strNumList
-    while (num < lastNum): #253
+    while (num <= currentIssueNum): #253
       try:
-        fname = ("%d/day_%03d.fb2" % (year, num))
-        if os.path.isfile(fname):
-            print ("File %s exists, get next." % fname)
+        content = self.fb2(num, year)
+        if len(content) > 0:
+            with open((downloader_common.rootPath+'/day/'+"%d/day_%03d.fb2" % (year, num)), "w") as fb2_file:
+                fb2_file.write(content)
         else:
-            content = downloader.fb2(num, year)
-            if len(content) > 0:
-                with open((downloader_common.rootPath+'/day/'+"%d/day_%03d.fb2" % (year, num)), "w") as fb2_file:
-                    fb2_file.write(content)
-            else:
-                print("No content for num %d, year %d." % (num, year))
-                logging.warning("No content for num %d, year %d." % (num, year))
+            print("No content for num %d, year %d." % (num, year))
+            logging.warning("No content for num %d, year %d." % (num, year))
       except KeyboardInterrupt:
         sys.exit("Download interrrupted.")
       except:
@@ -489,27 +622,7 @@ def run():
         traceback.print_exception(exc_type, exc_value, exc_traceback)
         sys.exit("Unexpected error:  "+ exc_type)
       num += 1
+    logging.info("Job completed")
 
-def runUrl():
-    downloader = Downloader()
-
-    logging.basicConfig(filename='downloader_day.log',level=logging.INFO,
-            format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
-
-    noUrlPart = 'no65-2016-0'
-    content = downloader.fb2ForUrl(noUrlPart)
-    if len(content) > 0:
-        with open(("2017/%s.fb2" % (noUrlPart)), "w") as fb2_file:
-            fb2_file.write(content)
-    else:
-        print("No content for num %d, year %d." % (num, year))
-        logging.warning("No content for num %d, year %d." % (num, year))
-
-run()
-
-"""
-logging.basicConfig(filename='downloader_day_debug.log',level=logging.DEBUG)
-#downloader.getNewsForNumber(35,1997)
-article = downloader.loadArticle('https://day.kyiv.ua/uk/article/media/mafiya-bezsmertna-y-na-ekrani')
-print(article.info())
-"""
+if __name__ == '__main__':
+    run()

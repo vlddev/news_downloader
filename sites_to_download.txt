@@ -15,6 +15,9 @@ http://www.epravda.com.ua
 http://www.champion.com.ua/
 	-> http://www.champion.com.ua/archives/year_2000/
 
+http://www.eurointegration.com.ua/
+	-> http://www.eurointegration.com.ua/archives/year_2014/
+
 umoloda.kiev.ua
 	->  (03.10.2003) http://www.umoloda.kiev.ua/number/30/
         ->  http://www.umoloda.kiev.ua/number/31/ ...
@@ -78,13 +81,33 @@ lb.ua
 ====   TODO     =====
 =====================
 
+http://slovoprosvity.org/archive/ (1995 - 2014) pdf
+	http://slovoprosvity.org/2008/01/ (2008 - 2017) html
+
+
+http://detector.media/archive/2001-09-10/ (10.09.2001 - )
+
 Рівне Вечірнє
-http://rivnepost.rv.ua/showarchive.php?year=2003 (2003 - )
+http://rivnepost.rv.ua/showarchive.php?year=2003 (2003 - 
+
+Чернівецька газета "ЧАС" (2002 - )
+http://www.chas.cv.ua/
+http://www.chas.cv.ua/arhiv.html
+http://www.chas.cv.ua/page/867/
+
+ІнА "Українські Новини". (28.07.2009 - )
+https://ukranews.com/ua/archiv/date_from/28.07.2009/date_to/28.07.2009
 
 КРИМСЬКА СВIТЛИЦЯ
 http://svitlytsia.crimea.ua/index.php?section=archive&year=2002&month=8 (2002 -)
 
 http://www.galychyna.if.ua/archive/ (Травень 2008)
+
+Агенція інформації та аналітики «Гал-інфо»
+http://galinfo.com.ua/archive/2006/01/ (01.2006 - )
+
+Інтерфакс-Україна. (24.10.2008 - )
+http://ua.interfax.com.ua/news/latest-5000.html
 
 ukrinform.ua
 	-> https://www.ukrinform.ua/rubric-technology/page-517 (31 серпня 2004)
@@ -110,8 +133,6 @@ http://life.pravda.com.ua/
 	-> http://life.pravda.com.ua/archives/year_2007/
 http://kiev.pravda.com.ua/
 	-> http://kiev.pravda.com.ua/archives/year_2008/
-http://www.eurointegration.com.ua/
-	-> http://www.eurointegration.com.ua/archives/year_2014/
 http://blogs.pravda.com.ua/
 	-> http://blogs.pravda.com.ua/archives/year_2007/
 http://www.istpravda.com.ua/

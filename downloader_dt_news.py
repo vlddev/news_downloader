@@ -176,7 +176,6 @@ class Downloader(object):
     #article.info()
     return article
 
-
   def loadArticleTextFromHtml(self, xidelCmd):
     p = subprocess.Popen(xidelCmd, shell=True, stdout=subprocess.PIPE)
     result = p.communicate()[0].decode('utf-8')
