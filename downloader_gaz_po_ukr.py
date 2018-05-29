@@ -224,9 +224,9 @@ downloader = Downloader()
 logging.basicConfig(filename='downloader_gaz_po_ukr.log',level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-num = 2007 #2016 - 1937
+num = 2032 #2016 - 1937
 
-while (num < 2032):
+while (num < 2066):
   content = downloader.fb2(num)
   if len(content) > 0:
     with open(downloader_common.rootPath+'/gaz_po_ukr/'+str(downloader.numDate.year)+'/gaz_po_ukr_'+str(num)+'.fb2', "w") as fb2_file:

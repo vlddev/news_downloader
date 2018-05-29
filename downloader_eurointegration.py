@@ -16,9 +16,9 @@ def run():
     logging.basicConfig(filename='downloader_eurointegration.log', level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-    strdate = '01.01.2017'
+    strdate = '28.12.2017'
     date = datetime.datetime.strptime(strdate, '%d.%m.%Y').date()
-    dateTo = datetime.datetime.strptime('28.12.2017', '%d.%m.%Y').date()
+    dateTo = datetime.datetime.strptime('01.01.2018', '%d.%m.%Y').date()
 
     while (date < dateTo):
       content = downloader.fb2(date)
@@ -310,4 +310,5 @@ class Downloader(object):
     logging.info("Job completed")
 
 
-run()
+if __name__ == '__main__':
+    run()

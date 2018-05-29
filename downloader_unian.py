@@ -16,10 +16,10 @@ def run():
 
     logging.basicConfig(filename='downloader_unian.log', level=logging.INFO)
 
-    strdate = '01.12.2017'
+    strdate = '01.01.2018'
     date = datetime.datetime.strptime(strdate, '%d.%m.%Y').date()
     # dateTo = datetime.datetime.strptime('17.09.2000', '%d.%m.%Y').date()
-    dateTo = datetime.datetime.strptime('02.12.2017', '%d.%m.%Y').date()
+    dateTo = datetime.datetime.strptime('01.04.2018', '%d.%m.%Y').date()
 
     while (date < dateTo):
         content = downloader.fb2(date)
@@ -45,11 +45,12 @@ class Article(object):
         if j[0] is not None:
             self.dtStr = j[0]
         if len(self.dtStr) > 7:
-            if re.match('^\d{1,2}:\d{1,2}.*$', self.dtStr) is not None:
+            if re.match('^\d{1,2}:\d{1,2}.*$', self.dtStr, re.MULTILINE) is not None:
                 self.timeStr = self.dtStr[0:5] + ':00'  # extract time (first 5 char)
             else:
                 self.timeStr = self.dtStr[-8:]  # extract time (last 8 char)
         else:
+            logging.warning("Time not set in article. URL: " + self.url)
             self.timeStr = '00:00:00'
 
         self.title = ''
@@ -246,7 +247,7 @@ class Downloader(object):
     def loadArticle(self, url):
         cmd = (
             downloader_common.XIDEL_CMD.format(url) +
-            ' --xpath \'//div[@class="article-text"]//div[@class="item time"]\''  # datetime in format hh:mi, dd Month yyyy
+            ' --xpath \'//div[@class="article-text"]//div[@class="item time no-padding"]\''  # datetime in format hh:mi, dd Month yyyy
             ' --xpath \'//div[@class="article-text"]//h1\''  # title
             ' --xpath \'//div[@class="article-text"]//h2\''  # summary
             # ' --xpath \'//div[@class="article-text"]//span[@itemprop="articleBody"]\'' # article body
@@ -254,15 +255,15 @@ class Downloader(object):
         if 'pogoda.unian.ua/' in url:
             cmd = (
                 downloader_common.XIDEL_CMD.format(url) +
-                ' --xpath \'//div[@class="news-details"]//div[@class="newsDetailsInfo__dateTime"]\''  # datetime in format yyyy-mm-dd hh:mi:ss
-                ' --xpath \'//div[@class="news-details"]//h1[@class="news-details__title"]\''  # title
-                ' --xpath \'//div[@class="news-details"]//div[@class="newsDetailsInfo__main"]//h2\''  # summary
-                ' --xpath \'//div[@class="news-details"]//div[@class="newsDetailsInfo__main"]//p\''  # article body
+                ' --xpath \'//div[@class="news-details__info newsDetailsInfo news-container"]//div[@class="newsDetailsInfo__dateTime time"]\''  # datetime in format hh:mi, dd Month yyyy
+                ' --xpath \'//div[@class="news-details__info newsDetailsInfo news-container"]//h1[@class="news-details__title"]\''  # title
+                ' --xpath \'//div[@class="news-details__info newsDetailsInfo news-container"]//div[@class="newsDetailsInfo__main"]//h2\''  # summary
+                ' --xpath \'//div[@class="news-details__info newsDetailsInfo news-container"]//div[@class="newsDetailsInfo__main"]//p\''  # article body
                 ' --output-format=json-wrapped')  # output as json
         # print('cmd: '+cmd)
         # xidel http://www.unian.ua/society/46-ninishni-studenti-jitimut-pri-komunizmi.html -q --xpath '//section[@class="article-column"]//div[@class="meta"]//time[@itemprop="datePublished"]/@content'
         # xidel http://www.unian.ua/society/46-ninishni-studenti-jitimut-pri-komunizmi.html -q --xpath '//div[@class="article-text"]//span[@itemprop="articleBody"]//p'
-        # xidel https://sport.unian.ua/hockey/2137881-kremenchuk-zakinuv-vovkam-7-shayb-i-rozgromiv-brovarsku-komandu.html -q --xpath '//div[@class="article-text"]//span[@itemprop="articleBody"]//p'
+        # xidel https://pogoda.unian.ua/news/2327629-2-sichnya-temperatura-v-ukrajini-zalishitsya-plyusovoyu-sinoptik.html -q --xpath '//div[@class="news-details__info newsDetailsInfo news-container"]//div[@class="newsDetailsInfo__dateTime"]'
 
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
         result = p.communicate()[0].decode('utf-8')
@@ -432,7 +433,11 @@ strdate = '12.04.2012'
 date = datetime.datetime.strptime(strdate, '%d.%m.%Y').date()
 downloader.getNewsForDate(date)
 
+downloader = Downloader(".")
 logging.basicConfig(filename='downloader_unian_debug.log',level=logging.DEBUG)
-article = downloader.loadArticle('https://sport.unian.ua/hockey/2137881-kremenchuk-zakinuv-vovkam-7-shayb-i-rozgromiv-brovarsku-komandu.html')
+article = downloader.loadArticle('https://pogoda.unian.ua/news/2327629-2-sichnya-temperatura-v-ukrajini-zalishitsya-plyusovoyu-sinoptik.html')
 print(article.info())
+
 """
+if __name__ == '__main__':
+    run()

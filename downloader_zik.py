@@ -1,4 +1,5 @@
-import sys, traceback
+import sys
+import traceback
 import datetime
 import subprocess
 import json
@@ -7,17 +8,18 @@ import re
 import stats
 import downloader_common
 
+
 def run():
     rootPath = '/home/vlad/Dokumente/python/news_lib'
     downloader = Downloader(rootPath)
-    #logging.basicConfig(filename='downloader_debug.log',level=logging.DEBUG)
+    # logging.basicConfig(filename='downloader_debug.log',level=logging.DEBUG)
 
     logging.basicConfig(filename='downloader_zik.log',level=logging.INFO)
 
-    strdate = '01.01.2017'
+    strdate = '20.11.2017'
     date = datetime.datetime.strptime(strdate, '%d.%m.%Y').date()
     #dateTo = datetime.datetime.strptime('17.09.2000', '%d.%m.%Y').date()
-    dateTo = datetime.datetime.strptime('03.01.2017', '%d.%m.%Y').date()
+    dateTo = datetime.datetime.strptime('01.01.2018', '%d.%m.%Y').date()
 
     while (date < dateTo):
       content = downloader.fb2(date)
@@ -349,3 +351,6 @@ if textStats.isRus():
   print("this is Rusian text")
 
 """
+
+if __name__ == '__main__':
+    run()

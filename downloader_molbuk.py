@@ -365,7 +365,7 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s',
     datefmt='%d.%m.%Y %H:%M:%S')
 
-dateTo = datetime.datetime.strptime('31.08.2017', '%d.%m.%Y').date()
+dateTo = datetime.datetime.strptime('30.11.2017', '%d.%m.%Y').date()
 
 # download articles from today until dateTo
 downloader.getNewsPerPage(1, dateTo)

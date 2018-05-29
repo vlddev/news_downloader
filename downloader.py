@@ -10,13 +10,14 @@ import downloader_common
 
 def mode1():
     rootPath = downloader_common.rootPath
-    dateFrom = '16.08.2017'
-    dateTo = '01.12.2017'
+    dateFrom = '01.01.2018'
+    dateTo = '01.04.2018'
 
     dlModules = [
         'downloader_champion', 'downloader_up_news', 'downloader_epravda',
         'downloader_dt_news', 'downloader_gazeta_ua', 'downloader_lb',
-        'downloader_unian', 'downloader_zaxid', 'downloader_zik'
+        'downloader_unian', 'downloader_zaxid', 'downloader_zik',
+        'downloader_eurointegration'
     ]
 
     for dlModule in dlModules:
@@ -36,9 +37,9 @@ def mode1():
 
 def mode2():
     rootPath = downloader_common.rootPath
-    dlModules = [('downloader_zbruc', '26.08.1892', '07.11.1892'),
-                 ('downloader_zbruc', '26.08.1917', '07.11.1917'),
-                 ('downloader_zbruc', '26.08.1942', '07.11.1942')]
+    dlModules = [('downloader_zbruc', '01.01.1893', '01.04.1893'),
+                 ('downloader_zbruc', '01.01.1918', '01.04.1918'),
+                 ('downloader_zbruc', '01.01.1943', '01.01.1943')]
 
     for dlModule, dateFrom, dateTo in dlModules:
         try:
@@ -57,7 +58,7 @@ def mode2():
 
 def mode3():
     dlModules = [
-        'downloader_day', 'downloader_dt_gazeta', 'downloader_umoloda'
+        'downloader_day', 'downloader_dt_gazeta', 'downloader_umoloda', 'downloader_molbuk'
     ]
 
     for dlModule in dlModules:
@@ -85,4 +86,4 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s',
     datefmt='%d.%m.%Y %H:%M:%S')
-mode3()
+mode1()

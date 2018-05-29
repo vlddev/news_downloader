@@ -301,17 +301,18 @@ downloader = Downloader()
 logging.basicConfig(filename='downloader_tyzh.log',level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-num = 522
+num = 525
 
-while (num < 529): #last 488
+while (num < 530): #last 488
   try:
     content = downloader.fb2(num)
     if len(content) > 0:
       with open(str(downloader.numDate.year)+'/tyzhden_'+str(num)+'.fb2', "w") as fb2_file:
         fb2_file.write(content)
     else:
-      print("No content for url.")
-      logging.warning("No content for url.")
+      msg = "No content for number {0}.".format(num)
+      print(msg)
+      logging.warning(msg)
   except KeyboardInterrupt:
     sys.exit("Download interrupted.")
   except:

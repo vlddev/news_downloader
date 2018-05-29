@@ -284,9 +284,9 @@ class Downloader(object):
     curYearFolder = downloader_common.rootPath+'/umoloda/'+str(now.year)
     prevYearFolder = downloader_common.rootPath+'/umoloda/'+str(now.year-1)
     lastIssueFolder = downloader_common.rootPath+'/umoloda'
-    if os.path.isdir(curYearFolder): #folder for current year exists
+    if os.path.isdir(curYearFolder): # folder for current year exists
         lastIssueFolder = curYearFolder
-    elif os.path.isdir(curYearFolder): #folder for previous year exists:
+    elif os.path.isdir(prevYearFolder): # folder for previous year exists:
         lastIssueFolder = prevYearFolder
     else:
         return 1

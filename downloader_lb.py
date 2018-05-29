@@ -15,10 +15,10 @@ def run():
 
     logging.basicConfig(filename='downloader_lb.log',level=logging.INFO)
 
-    strdate = '01.01.2017'
+    strdate = '01.01.2018'
     date = datetime.datetime.strptime(strdate, '%d.%m.%Y').date()
     #dateTo = datetime.datetime.strptime('17.09.2000', '%d.%m.%Y').date()
-    dateTo = datetime.datetime.strptime('03.01.2017', '%d.%m.%Y').date()
+    dateTo = datetime.datetime.strptime('01.04.2018', '%d.%m.%Y').date()
 
     while (date < dateTo):
       content = downloader.fb2(date)
@@ -203,7 +203,7 @@ class Downloader(object):
            ' --xpath \'//article[@class="material"]//div[@class="header"]/div[@class="date"]/time\'' #datetime in format dd month yyyy, hh:mi
            ' --xpath \'//article[@class="material"]//div[@class="header"]/h1\'' #title
            ' --xpath \'//article[@class="material"]//div[@class="header"]/h2\'' #summary
-           ' --xpath \'//article[@class="material"]/*[self::p or self::h4]\'' #article body
+           ' --xpath \'//article[@class="material"]//div[@itemprop="articleBody"]/*[self::p or self::h4]\'' #article body
            ' --xpath \'//article[@class="material"]//div[@class="header"]/div[@class="authors"]\'' #authors
            ' --output-format=json-wrapped') #output as json
     #print('cmd: '+cmd)
@@ -299,7 +299,11 @@ strdate = '12.04.2012'
 date = datetime.datetime.strptime(strdate, '%d.%m.%Y').date()
 downloader.getNewsForDate(date)
 
-logging.basicConfig(filename='downloader_unian_debug.log',level=logging.DEBUG)
-article = downloader.loadArticle('http://pogoda.unian.ua/news/1357961-atmosfera-zemli-nagrivaetsya-znachno-shvidshe-nij-vvajalosya-ranishe-vcheni.html')
+downloader = Downloader(".")
+logging.basicConfig(filename='downloader_lb_debug.log',level=logging.DEBUG)
+article = downloader.loadArticle('https://ukr.lb.ua/world/2018/01/01/386315_12_lyudey_zaginuli_aviakatastrofi.html')
 print(article.info())
 """
+
+if __name__ == '__main__':
+    run()
