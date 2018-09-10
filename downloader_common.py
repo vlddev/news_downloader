@@ -1,7 +1,7 @@
 import functools
 
 USER_AGENT="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1"
-XIDEL_CMD='xidel "{0}" -q --user-agent="'+USER_AGENT+'"'
+XIDEL_CMD='xidel "{0}" -s --user-agent="'+USER_AGENT+'"'
 rootPath = '/home/vlad/Dokumente/python/news_lib'
 
 def relpaceHtmlEntities(val):
