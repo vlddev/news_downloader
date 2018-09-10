@@ -1,4 +1,5 @@
 import sys
+import traceback
 import os
 import requests
 import datetime
@@ -69,12 +70,11 @@ class Article(object):
           self.body.append(proLine)
 
   def info(self):
-    print('dtStr: '+self.dtStr);
-    print('timeStr: '+self.timeStr);
-    print('url: '+self.url);
-    print('title: '+str(self.title));
-    #print('summary: '+str(self.summary));
-    print('body: ' + "\n".join(self.body));
+    print('dtStr: '+self.dtStr)
+    print('timeStr: '+self.timeStr)
+    print('url: '+self.url)
+    print('title: '+str(self.title))
+    print('body: ' + "\n".join(self.body))
 
   def fb2(self):
     ret = '<section><title><p>' + downloader_common.escapeXml(self.title) + '</p></title>'

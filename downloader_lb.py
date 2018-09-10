@@ -1,4 +1,5 @@
 import sys
+import traceback
 import datetime
 import subprocess
 import logging
@@ -72,9 +73,6 @@ class Article(object):
       # remove html comments
       text = re.subn("(<!--.*?-->)", "", text, flags=re.MULTILINE|re.DOTALL)[0]
 
-      #if 'Якщо ви знайшли помилку' in text:
-      #    text = text[:text.find('Якщо ви знайшли помилку')]
-
       #remove empty lines
       for line in text.split('\n'):
         proLine = line.strip()
@@ -88,13 +86,13 @@ class Article(object):
           self.author = val.strip()
 
   def info(self):
-    print('dtStr: '+self.dtStr);
-    print('timeStr: '+self.timeStr);
-    print('url: '+self.url);
-    print('title: '+str(self.title));
-    print('author: '+str(self.author));
-    print('summary: '+str(self.summary));
-    print('body: ' + "\n".join(self.body));
+    print('dtStr: '+self.dtStr)
+    print('timeStr: '+self.timeStr)
+    print('url: '+self.url)
+    print('title: '+str(self.title))
+    print('author: '+str(self.author))
+    print('summary: '+str(self.summary))
+    print('body: ' + "\n".join(self.body))
 
   def fb2(self):
     ret = '<section><title><p>' + downloader_common.escapeXml(self.title) + '</p></title>'

@@ -1,4 +1,5 @@
-import sys, traceback
+import sys
+import traceback
 import os
 import os.path
 import datetime
@@ -44,14 +45,6 @@ def test():
 
     article = downloader.loadArticle('http://gazeta.dt.ua/EDUCATION/ctatus-chi-viznannya-_.html')
     print(article.info())
-
-    """
-    downloader.getNewsForNumber(1042)
-    #title = downloader.getTitleForNumber(1042)
-    #print(title)
-    #art = downloader.loadArticle('http://gazeta.dt.ua/EDUCATION/ctatus-chi-viznannya-_.html')
-    #art.info()
-    """
 
 class Article(object):
   def __init__(self, url, j):
@@ -100,11 +93,11 @@ class Article(object):
           self.body.append(proLine)
 
   def info(self):
-    print('dtStr: '+self.dtStr);
-    print('author: '+self.author);
-    print('url: '+self.url);
-    print('title: '+str(self.title));
-    print('body: ' + "\n".join(self.body));
+    print('dtStr: '+self.dtStr)
+    print('author: '+self.author)
+    print('url: '+self.url)
+    print('title: '+str(self.title))
+    print('body: ' + "\n".join(self.body))
 
   def fb2(self):
     ret = '<section><title><p>' + downloader_common.escapeXml(self.title) + '</p></title>'

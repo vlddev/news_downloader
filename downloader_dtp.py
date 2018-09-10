@@ -68,11 +68,11 @@ class Article(object):
           self.body.append(proLine)
 
   def info(self):
-    print('dtStr: '+self.dtStr);
-    print('author: '+self.author);
-    print('url: '+self.url);
-    print('title: '+str(self.title));
-    print('body: ' + "\n".join(self.body));
+    print('dtStr: '+self.dtStr)
+    print('author: '+self.author)
+    print('url: '+self.url)
+    print('title: '+str(self.title))
+    print('body: ' + "\n".join(self.body))
 
   def fb2(self):
     ret = '<section><title><p>' + downloader_common.escapeXml(self.title) + '</p></title>'

@@ -11,23 +11,23 @@ import downloader_common
 
 
 def run():
-    rootPath = '/home/vlad/Dokumente/python/news_lib'
+    rootPath = downloader_common.rootPath
     downloader = Downloader(rootPath)
-    #logging.basicConfig(filename='downloader_debug.log',level=logging.DEBUG)
+    logging.basicConfig(filename='downloader_up_news.log',level=logging.INFO,
+        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-    logging.basicConfig(filename='downloader_up_news.log',level=logging.INFO)
+    downloader.load('01.04.2018', '02.04.2018')
 
-    strdate = '05.03.2017'
-    date = datetime.datetime.strptime(strdate, '%d.%m.%Y').date()
-    #dateTo = datetime.datetime.strptime('17.09.2000', '%d.%m.%Y').date()
-    dateTo = datetime.datetime.strptime('08.03.2017', '%d.%m.%Y').date()
+def test():
+    rootPath = downloader_common.rootPath
+    downloader = Downloader(rootPath)
 
-    while (date < dateTo):
-      content = downloader.fb2(date)
-      if len(content) > 0:
-        with open(rootPath+'/pravda_com_ua_sa/'+str(date.year)+'/up_news_'+str(date)+'.fb2', "w") as fb2_file:
-          fb2_file.write(content)
-      date += datetime.timedelta(days=1)
+    logging.basicConfig(filename='downloader_up_news.log',level=logging.DEBUG,
+        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    article = downloader.loadArticle('https://www.pravda.com.ua/news/2018/04/1/7176446/')
+    print(article.info())
+
 
 class Article(object):
   def __init__(self, url, j):
@@ -87,13 +87,13 @@ class Article(object):
         self.author = val.strip()
 
   def info(self):
-    print('dtStr: '+self.dtStr);
-    print('timeStr: '+self.timeStr);
-    print('url: '+self.url);
-    print('title: '+str(self.title));
-    print('author: '+str(self.author));
-    print('summary: '+str(self.summary));
-    print('body: ' + "\n".join(self.body));
+    print('dtStr: '+self.dtStr)
+    print('timeStr: '+self.timeStr)
+    print('url: '+self.url)
+    print('title: '+str(self.title))
+    print('author: '+str(self.author))
+    print('summary: '+str(self.summary))
+    print('body: ' + "\n".join(self.body))
 
   def fb2(self):
     ret = '<section><title><p>' + downloader_common.escapeXml(self.title) + '</p></title>'
@@ -284,14 +284,14 @@ class Downloader(object):
     logging.debug(">> loadArticleTextFromHtml()")
     logging.debug(result)
     #print(result)
-    txt = re.sub('\<p.*?\>', '[br]', result, flags=re.IGNORECASE)
-    txt = re.sub('\<br.*?\>', '[br]', txt, flags=re.IGNORECASE)
-    txt = re.sub('\<\/\s*p\s*?\>', '', txt, flags=re.IGNORECASE)
-    txt = re.sub('\<\/\s*br\s*?\>', '', txt, flags=re.IGNORECASE)
+    txt = re.sub(r'\<p.*?\>', '[br]', result, flags=re.IGNORECASE)
+    txt = re.sub(r'\<br.*?\>', '[br]', txt, flags=re.IGNORECASE)
+    txt = re.sub(r'\<\/\s*p\s*?\>', '', txt, flags=re.IGNORECASE)
+    txt = re.sub(r'\<\/\s*br\s*?\>', '', txt, flags=re.IGNORECASE)
     #txt = result.replace('<br>', '[br]').replace('</br>', '').replace('<p>', '[br]').replace('</p>', '').replace('<br />', '[br]')
     #txt = txt.replace('<BR>', '[br]').replace('</BR>', '').replace('<P>', '[br]').replace('</P>', '').replace('<BR />', '[br]')
     txt = txt.replace('&amp;#', '&#')
-    txt = re.sub('&amp;(\w+?);','&\\1;',txt)
+    txt = re.sub(r'&amp;(\w+?);','&\\1;',txt)
     logging.debug(">> replace with [br]")
     logging.debug(txt)
     soup = BeautifulSoup(txt, 'html.parser')
@@ -369,7 +369,6 @@ class Downloader(object):
     return ret
 
   def load(self, sDateFrom, sDateTo):
-    logging.basicConfig(filename='downloader_up_news.log',level=logging.INFO)
     date = datetime.datetime.strptime(sDateFrom, '%d.%m.%Y').date()
     dateTo = datetime.datetime.strptime(sDateTo, '%d.%m.%Y').date()
 
@@ -382,18 +381,5 @@ class Downloader(object):
     logging.info("Job completed")
 
 
-#run()
-"""
-#downloader.getNewsForDate('21.01.2011')
-article = downloader.loadArticle('http://www.pravda.com.ua/rus/columns/2014/01/3/7008997/')
-print(article.info())
-#article = downloader.loadArticle('http://www.pravda.com.ua/news/2000/04/19/2980668/') #ukr text
-#article = downloader.loadArticle('http://www.pravda.com.ua/articles/2012/11/22/6977980/') #rus text
+run()
 
-#textStats = stats.TextStats(" ".join(article.body))
-print(textStats.common_text_20)
-if textStats.isUkr():
-  print("this is Ukrainian text")
-if textStats.isRus():
-  print("this is Rusian text")
-"""

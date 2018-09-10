@@ -1,6 +1,7 @@
 import sys
 import os
 import requests
+import traceback
 import datetime
 import subprocess
 import logging
@@ -49,12 +50,11 @@ class Article(object):
           self.body.append(proLine)
 
   def info(self):
-    print('dtStr: '+self.dtStr);
-    print('timeStr: '+self.timeStr);
-    print('url: '+self.url);
-    print('title: '+str(self.title));
-    #print('summary: '+str(self.summary));
-    print('body: ' + "\n".join(self.body));
+    print('dtStr: '+self.dtStr)
+    print('timeStr: '+self.timeStr)
+    print('url: '+self.url)
+    print('title: '+str(self.title))
+    print('body: ' + "\n".join(self.body))
 
   def fb2(self):
     ret = '<section><title><p>' + downloader_common.escapeXml(self.title) + '</p></title>'
@@ -172,7 +172,7 @@ class Downloader(object):
           text = " ".join(article.body)
           text = text.strip()
           if len(text) > 0: #article is not empty
-            cmd = ('xidel '+url+' -q --user-agent="'+downloader_const.USER_AGENT+'"'
+            cmd = ('xidel '+url+' -q --user-agent="'+downloader_common.USER_AGENT+'"'
                ' --xpath \'//section[@class="article-content clearfix"]//article\'' #article text
                ' --output-format=html') #output as html
             jsonArt[2] = self.loadArticleTextFromHtml(cmd)

@@ -1,4 +1,5 @@
 import sys
+import traceback
 import datetime
 import subprocess
 import logging
@@ -10,16 +11,14 @@ import downloader_common
 
 
 def run():
-    rootPath = '/home/vlad/Dokumente/python/news_lib'
+    rootPath = downloader_common.rootPath
     downloader = Downloader(rootPath)
-    # logging.basicConfig(filename='downloader_debug.log',level=logging.DEBUG)
-
     logging.basicConfig(filename='downloader_unian.log', level=logging.INFO)
 
-    strdate = '01.01.2018'
+    strdate = '01.04.2018'
     date = datetime.datetime.strptime(strdate, '%d.%m.%Y').date()
     # dateTo = datetime.datetime.strptime('17.09.2000', '%d.%m.%Y').date()
-    dateTo = datetime.datetime.strptime('01.04.2018', '%d.%m.%Y').date()
+    dateTo = datetime.datetime.strptime('02.04.2018', '%d.%m.%Y').date()
 
     while (date < dateTo):
         content = downloader.fb2(date)
@@ -28,6 +27,17 @@ def run():
                       str(date) + '.fb2', "w") as fb2_file:
                 fb2_file.write(content)
         date += datetime.timedelta(days=1)
+
+def test():
+    rootPath = downloader_common.rootPath
+    downloader = Downloader(rootPath)
+
+    logging.basicConfig(filename='downloader_unian.log',level=logging.DEBUG,
+        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    article = downloader.loadArticle('https://www.unian.ua/incidents/10064507-u-hmelnickomu-suditimut-bandu-shcho-trujila-lyudey-zaradi-nazhivi.html')
+    print(article.info())
+
 
 def runUrl():
     rootPath = '/home/vlad/Dokumente/python/news_lib'
@@ -45,7 +55,7 @@ class Article(object):
         if j[0] is not None:
             self.dtStr = j[0]
         if len(self.dtStr) > 7:
-            if re.match('^\d{1,2}:\d{1,2}.*$', self.dtStr, re.MULTILINE) is not None:
+            if re.match(r'^\d{1,2}:\d{1,2}.*$', self.dtStr, re.MULTILINE) is not None:
                 self.timeStr = self.dtStr[0:5] + ':00'  # extract time (first 5 char)
             else:
                 self.timeStr = self.dtStr[-8:]  # extract time (last 8 char)
@@ -237,7 +247,7 @@ class Downloader(object):
                         # sys.exit("Article can not be loaded from URL: "+ line)
                 except SystemExit:
                     raise
-                except BaseException as exc:
+                except BaseException:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
                     print("Unexpected error: ", exc_type)
                     traceback.print_exception(exc_type, exc_value, exc_traceback)
@@ -405,9 +415,8 @@ class Downloader(object):
         for article in articleList:
             try:
                 ret += '\n' + article.fb2()
-            except Exception as exc:
-                print("Article ", article.info(), "Unexpected error: ",
-                      sys.exc_info()[0])
+            except Exception:
+                print("Article ", article.info(), "Unexpected error: ", sys.exc_info()[0])
         ret += '\n</body>'
         ret += '\n</FictionBook>'
         return ret

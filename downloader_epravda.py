@@ -10,31 +10,20 @@ import downloader_common
 def run():
     rootPath = downloader_common.rootPath
     downloader = Downloader(rootPath)
-    #logging.basicConfig(filename='downloader_debug.log',level=logging.DEBUG)
 
     logging.basicConfig(filename='downloader_epravda.log',level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-    strdate = '01.03.2017'
-    date = datetime.datetime.strptime(strdate, '%d.%m.%Y').date()
-    #dateTo = datetime.datetime.strptime('17.09.2000', '%d.%m.%Y').date()
-    dateTo = datetime.datetime.strptime('08.03.2017', '%d.%m.%Y').date()
-
-    while (date < dateTo):
-      content = downloader.fb2(date)
-      if len(content) > 0:
-        with open(rootPath+'/epravda_sa/'+str(date.year)+'/epravda_'+str(date)+'.fb2', "w") as fb2_file:
-          fb2_file.write(content)
-      date += datetime.timedelta(days=1)
+    downloader.load('01.04.2018', '02.04.2018')
 
 def test():
     rootPath = downloader_common.rootPath
     downloader = Downloader(rootPath)
 
-    logging.basicConfig(filename='downloader_epravda.log',level=logging.INFO,
+    logging.basicConfig(filename='downloader_epravda.log',level=logging.DEBUG,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-    article = downloader.loadArticle('http://www.epravda.com.ua/news/2017/03/4/622309/')
+    article = downloader.loadArticle('https://www.epravda.com.ua/columns/2018/04/2/635598/')
     print(article.info())
 
     """
@@ -101,13 +90,13 @@ class Article(object):
         self.author = val.strip()
 
   def info(self):
-    print('dtStr: '+self.dtStr);
-    print('timeStr: '+self.timeStr);
-    print('url: '+self.url);
-    print('title: '+str(self.title));
-    print('author: '+str(self.author));
-    print('summary: '+str(self.summary));
-    print('body: ' + "\n".join(self.body));
+    print('dtStr: '+self.dtStr)
+    print('timeStr: '+self.timeStr)
+    print('url: '+self.url)
+    print('title: '+str(self.title))
+    print('author: '+str(self.author))
+    print('summary: '+str(self.summary))
+    print('body: ' + "\n".join(self.body))
 
   def fb2(self):
     ret = '<section><title><p>' + downloader_common.escapeXml(self.title) + '</p></title>'
@@ -300,8 +289,6 @@ class Downloader(object):
     return ret
 
   def load(self, sDateFrom, sDateTo):
-    logging.basicConfig(filename='downloader_epravda.log',level=logging.INFO,
-        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
     date = datetime.datetime.strptime(sDateFrom, '%d.%m.%Y').date()
     dateTo = datetime.datetime.strptime(sDateTo, '%d.%m.%Y').date()
 
@@ -313,4 +300,4 @@ class Downloader(object):
       date += datetime.timedelta(days=1)
     logging.info("Job completed")
 
-#run()
+#test()
