@@ -19,7 +19,7 @@ def run():
     # get last downloaded number
     num = downloader.getLastDownloadedIssueNr() + 1
 
-    # get current issue number (https://dt.ua/gazeta/issue/1129)
+    # get current issue number
     currentIssueNum = downloader.getCurrentIssueNr()
     print ("download issues from {0} to {1}".format(num, currentIssueNum))
     logging.info("download issues from {0} to {1}".format(num, currentIssueNum))
@@ -173,13 +173,13 @@ class Article(object):
           self.author = val.strip()
 
   def info(self):
-    print('dtStr: '+self.dtStr);
-    print('timeStr: '+self.timeStr);
-    print('url: '+self.url);
-    print('title: '+str(self.title));
-    print('author: '+str(self.author));
-    print('summary: '+str(self.summary));
-    print('body: ' + "\n".join(self.body));
+    print('dtStr: '+self.dtStr)
+    print('timeStr: '+self.timeStr)
+    print('url: '+self.url)
+    print('title: '+str(self.title))
+    print('author: '+str(self.author))
+    print('summary: '+str(self.summary))
+    print('body: ' + "\n".join(self.body))
 
   def fb2(self):
     ret = '<section><title><p>' + downloader_common.escapeXml(self.title) + '</p></title>'
@@ -583,9 +583,9 @@ class Downloader(object):
     elif os.path.isdir(curYearFolder): #folder for previous year exists:
         lastIssueFolder = prevYearFolder
     else:
-        return 1
+        return 0
 
-    lastIssueNr = 1
+    lastIssueNr = 0
     for issueFile in os.listdir(lastIssueFolder):
         if issueFile.endswith(".fb2"):
             curIssueNr = int(''.join(ele for ele in issueFile[:-3] if ele.isdigit()))
