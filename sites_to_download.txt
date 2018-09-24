@@ -138,6 +138,8 @@ http://blogs.pravda.com.ua/
 http://www.istpravda.com.ua/
 	-> http://www.istpravda.com.ua/archives/year_2010/
 
+https://ukr.media
+	-> https://ukr.media/200000/ (15-01-2014 - )
 
 Вісник Національного банку України
 	1994 -

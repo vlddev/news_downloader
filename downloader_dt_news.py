@@ -1,4 +1,5 @@
 import sys
+import traceback
 import datetime
 import subprocess
 import json
@@ -6,9 +7,35 @@ import logging
 from bs4 import BeautifulSoup
 import re
 import time
+import concurrent.futures
 import downloader_common
+import stats
 
-# TODO fix xpath, remove script, reload  2014 - 2016
+def run():
+    rootPath = downloader_common.rootPath
+    downloader = Downloader(rootPath)
+    logging.basicConfig(filename='downloader_dt_news.log',level=logging.INFO,
+      format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    downloader.load('26.02.2016', '01.09.2018')
+
+def test():
+    rootPath = downloader_common.rootPath
+    downloader = Downloader(rootPath)
+
+    logging.basicConfig(filename='downloader_dt_news.log',level=logging.DEBUG,
+        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    article = downloader.loadArticle('https://dt.ua/macrolevel/nbu-bezturbotniy-vibir-meti-zayava-nacionalnogo-banku-pro-zminu-monetarnoyi-politiki-ta-pochatok-zhittya-za-novimi-pravilami-inflyaciynogo-targetuvannya-zalishaye-bez-vidpovidi-bagato-gostrih-pitan-yak-po-suti-samogo-povidomlennya-tak-i-nashog')
+    print(article.info())
+
+    text = " ".join(article.body)
+    text = text.strip()
+    textStats = stats.TextStats(text)
+    (ret, retMsg) = textStats.isStoreText()
+    if not ret:
+      print("WARNING: "+retMsg)
+
 
 class Article(object):
   def __init__(self, url, j):
@@ -70,16 +97,18 @@ class Article(object):
       #remove empty lines
       for line in text.split('\n'):
         proLine = line.strip()
+        if 'Читайте також:' in proLine:
+          break
         if len(proLine) > 0:
           self.body.append(downloader_common.relpaceHtmlEntities(proLine))
 
   def info(self):
-    print('dtStr: '+self.dtStr);
-    print('timeStr: '+self.timeStr);
-    print('url: '+self.url);
-    print('title: '+str(self.title));
-    print('summary: '+str(self.summary));
-    print('body: ' + "\n".join(self.body));
+    print('dtStr: '+self.dtStr)
+    print('timeStr: '+self.timeStr)
+    print('url: '+self.url)
+    print('title: '+str(self.title))
+    print('summary: '+str(self.summary))
+    print('body: ' + "\n".join(self.body))
 
   def fb2(self):
     ret = '<section><title><p>' + downloader_common.escapeXml(self.title) + '</p></title>'
@@ -97,12 +126,11 @@ class Downloader(object):
     self.baseUrl = 'http://dt.ua'
     self.getLinksCmd = downloader_common.XIDEL_CMD + ' --xpath \'//a/@href\''
     self.rootPath = rootPath
+    self.maxDownloadThreads = 30
 
   def getNewsForDate(self, date):
-    print('get news for %d.%d.%d' % (date.day, date.month, date.year))
     url = self.baseUrl + '/sitemap/text/%d/%d/%d/index.html' % (date.year, date.month, date.day)
-    print('[%d.%d.%d] ' % (date.day, date.month, date.year) + 'url: ' +url)
-    # replace {0} with url
+    print('get news for %d.%d.%d, url: %s' % (date.day, date.month, date.year, url))
     articleList = list()
     cmd = self.getLinksCmd.format(url)
     #print('cmd: ' +cmd)
@@ -113,20 +141,32 @@ class Downloader(object):
         try:
           retryCount = 0
           while True:
-              print ('[%d.%d.%d] ' % (date.day, date.month, date.year) + 'load article: '+self.baseUrl + line)
+              # print ('[%d.%d.%d] ' % (date.day, date.month, date.year) + 'load article: '+self.baseUrl + line)
               article = self.loadArticle(self.baseUrl + line)
               if article is not None:
                   if isinstance(article, str):
                       if article == 'reload':
                           # reload article
                           if retryCount > 4:
-                              #exit
-                              sys.exit("Timeout: Article can not be loaded from URL: "+self.baseUrl + line)
+                            #exit
+                            logging.error ('[%s] Timeout, try to reload article. RetryCount = %d' % (str(date), retryCount))
+                            break
+                            # sys.exit("Timeout: Article can not be loaded. from URL: %s" % (self.baseUrl + line))
                           retryCount += 1
-                          print ('[%d.%d.%d] ' % (date.day, date.month, date.year) + 'Timeout, try to reload article. RetryCount = '+str(retryCount))
+                          logging.warning ('[%s] Timeout, try to reload article. RetryCount = %d' % (str(date), retryCount))
                           continue
+                      else:
+                        break
                   elif isinstance(article, Article):
-                      articleList.append(article)
+                      text = " ".join(article.body)
+                      text = text.strip()
+                      textStats = stats.TextStats(text)
+                      (ret, retMsg) = textStats.isStoreText()
+                      if ret:
+                        articleList.append(article)
+                      else:
+                        logging.warning(retMsg+" date %s, URL: %s" % (str(date), self.baseUrl + line))
+
                       break
                   else:
                       #exit
@@ -145,26 +185,33 @@ class Downloader(object):
 
   def loadArticle(self, url):
     cmd = (downloader_common.XIDEL_CMD.format(url) +
-           ' --xpath \'//div[@class="central_article"]//div[@class="date"]\'' #date
+           ' --xpath \'//div[@class="central_article"]//span[@class="date"]\'' #date
            ' --xpath \'//div[@class="central_article"]//h1[@class="title"]/text()\'' #title
            ' --xpath \'//div[@class="central_article"]//div[@class="article_body"]//div[@class="summary"]\'' #summary
            ' --xpath \'//div[@class="central_article"]//div[@class="article_body_dummy"]\'' #empty text
            ' --output-format=json-wrapped') #output as json
     #print('cmd: '+cmd)
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-    result = p.communicate()[0].decode('utf-8')
-    #print(result)
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True) # 
+    (xidelStdout, xidelStderr) = p.communicate()
+    result = xidelStdout #.decode('utf-8')
     jsonArt = json.loads(result)
 
     if len(jsonArt) < 3:
-        print("result: "+str(result))
-        logging.error("result: "+str(result))
-        print("json: "+str(jsonArt))
-        logging.error("json: "+str(jsonArt))
-        # todo: if timeout, retry
+      if 'Internet/HTTP Error: 404' in xidelStderr:
+        msg = "Page not found. URL %s" % (url)
+        print("ERROR. " +msg)
+        logging.error(msg)
+        return 'page not found'
+      else:
+        msg = "len(jsonArt) < 3 for URL %s. stderr: %s, json: %s" % (url, str(xidelStderr), str(jsonArt))
+        print("ERROR. " +msg)
+        logging.error(msg)
         return 'reload'
     aTextCmd = (downloader_common.XIDEL_CMD.format(url) +
-       ' --xpath \'//div[@class="central_article"]//div[@class="article_body"]/node()[not(self::script or self::div[@class="picture aright"]  or self::div[@class="fb-post fb_iframe_widget"])]\''
+       ' --xpath \'//div[@class="central_article"]//div[@class="article_body"]//div[@class="text"]'
+             '/node()[not(self::script or self::div[@class="picture aright"] '
+             ' or self::div[@class="article_attached acenter"] or self::div[@class="fb-post"] '
+             ' or self::div[@class="fb-post fb_iframe_widget"] or self::blockquote[@class="twitter-tweet"])]\''
        ' --output-format=html') #output as html
     jsonArt[3] = self.loadArticleTextFromHtml(aTextCmd)
 
@@ -172,6 +219,8 @@ class Downloader(object):
     try:
       article = Article(url, jsonArt)
     except:
+      exc_type, exc_value, exc_traceback = sys.exc_info()
+      traceback.print_exception(exc_type, exc_value, exc_traceback)
       print ("Unexpected error: ", sys.exc_info()[0], "In article ", result)
     #article.info()
     return article
@@ -182,10 +231,10 @@ class Downloader(object):
     logging.debug(">> loadArticleTextFromHtml()")
     logging.debug(result)
     #print(result)
-    txt = re.sub('\<p.*?\>', '[br]', result, flags=re.IGNORECASE)
-    txt = re.sub('\<br.*?\>', '[br]', txt, flags=re.IGNORECASE)
-    txt = re.sub('\<\/\s*p\s*?\>', '', txt, flags=re.IGNORECASE)
-    txt = re.sub('\<\/\s*br\s*?\>', '', txt, flags=re.IGNORECASE)
+    txt = re.sub(r'\<p.*?\>', '[br]', result, flags=re.IGNORECASE)
+    txt = re.sub(r'\<br.*?\>', '[br]', txt, flags=re.IGNORECASE)
+    txt = re.sub(r'\<\/\s*p\s*?\>', '', txt, flags=re.IGNORECASE)
+    txt = re.sub(r'\<\/\s*br\s*?\>', '', txt, flags=re.IGNORECASE)
     #txt = result.replace('<br>', '[br]').replace('</br>', '').replace('<p>', '[br]').replace('</p>', '').replace('<br />', '[br]')
     #txt = txt.replace('<BR>', '[br]').replace('</BR>', '').replace('<P>', '[br]').replace('</P>', '').replace('<BR />', '[br]')
     txt = txt.replace('&amp;#', '&#')
@@ -238,53 +287,38 @@ class Downloader(object):
     return ret
 
   def load(self, sDateFrom, sDateTo):
-    logging.basicConfig(filename='downloader_dt_news.log',level=logging.INFO)
     date = datetime.datetime.strptime(sDateFrom, '%d.%m.%Y').date()
     dateTo = datetime.datetime.strptime(sDateTo, '%d.%m.%Y').date()
 
+    dateList = []
     while (date < dateTo):
-      content = self.fb2(date)
-      if len(content) > 0:
-        with open(self.rootPath+'/dt_news/'+str(date.year)+'/dt_news_'+str(date)+'.fb2', "w") as fb2_file:
-          fb2_file.write(content)
+      dateList.append(date)
       date += datetime.timedelta(days=1)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=self.maxDownloadThreads) as executor:
+      futureContents = {executor.submit(self.fb2, curDate): curDate for curDate in dateList}
+      for future in concurrent.futures.as_completed(futureContents):
+        curDate = futureContents[future]
+        try:
+          content = future.result()
+          if len(content) > 0:
+            outFileName = '%s/dt_news/%s/dt_news_%s.fb2' % (self.rootPath, str(curDate.year), str(curDate))
+            print("Write to file: " + outFileName)
+            with open(outFileName, "w") as fb2_file:
+              fb2_file.write(content)
+        except SystemExit:
+          raise
+        except BaseException:
+          exc_type, exc_value, exc_traceback = sys.exc_info()
+          print("Unexpected error: ", exc_type)
+          traceback.print_exception(exc_type, exc_value, exc_traceback)
+
     logging.info("Job completed")
 
 """
-def getFile(date, rootPath):
-  downloader = Downloader()
-  content = downloader.fb2(date)
-  if len(content) > 0:
-    with open(rootPath+'/dt_news/'+str(date.year)+'/dt_news_'+str(date)+'.fb2', "w") as fb2_file:
-      fb2_file.write(content)
-
-
-maxThreads = 6
-logging.basicConfig(filename='downloader_dt_news.log',level=logging.INFO)
-
-rootPath = '/home/vlad/Dokumente/python/news_lib'
-strdate = '24.08.2014'
-date = datetime.datetime.strptime(strdate, '%d.%m.%Y').date()
-dateTo = datetime.datetime.strptime('01.01.2017', '%d.%m.%Y').date()
-
-
-while (date < dateTo):
-  #wait until free thread
-  while threading.active_count() > maxThreads :
-      time.sleep(1)
-  #downloader = Downloader()
-  #content = downloader.fb2(date)
-  #if len(content) > 0:
-  #  with open(rootPath+'/dt_news/'+str(date.year)+'/dt_news_'+str(date)+'.fb2', "w") as fb2_file:
-  #    fb2_file.write(content)
-  job = threading.Thread(target=getFile, args=(date, rootPath))
-  job.start()
-  #job.join()
-  date += datetime.timedelta(days=1)
-
 #downloader.getNewsForDate('31.12.2014')
 article = downloader.loadArticle('http://dt.ua/ECONOMICS/nacionalizaciya-privatbanku-v-fotozhabah-zanepokoyennya-pro-vkladi-chergi-bilya-bankomativ-i-podarunok-do-19-grudnya-227933_.html')
 article.info()
-
-#TODO check rest of javascript in dt_news_2015/dt_news_2015-12-21.fb2; dt_news_2015/dt_news_2015-09-30.fb2; check also news 2014
 """
+
+run()

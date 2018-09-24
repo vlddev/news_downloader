@@ -6,25 +6,26 @@ import logging
 from bs4 import BeautifulSoup
 import stats
 import downloader_common
+import concurrent.futures
 
 def run():
-    rootPath = '/home/vlad/Dokumente/python/news_lib'
+    rootPath = downloader_common.rootPath
     downloader = Downloader(rootPath)
-    #logging.basicConfig(filename='downloader_debug.log',level=logging.DEBUG)
+    logging.basicConfig(filename='downloader_champion.log',level=logging.INFO,
+        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-    logging.basicConfig(filename='downloader_champion.log',level=logging.INFO)
+    downloader.load('01.01.2018', '01.09.2018')
 
-    strdate = '01.01.2017'
-    date = datetime.datetime.strptime(strdate, '%d.%m.%Y').date()
-    #dateTo = datetime.datetime.strptime('17.09.2000', '%d.%m.%Y').date()
-    dateTo = datetime.datetime.strptime('03.01.2017', '%d.%m.%Y').date()
+def test():
+    rootPath = downloader_common.rootPath
+    downloader = Downloader(rootPath)
 
-    while (date < dateTo):
-      content = downloader.fb2(date)
-      if len(content) > 0:
-        with open(rootPath+'/champion/'+str(date.year)+'/champion_'+str(date)+'.fb2', "w") as fb2_file:
-          fb2_file.write(content)
-      date += datetime.timedelta(days=1)
+    logging.basicConfig(filename='downloader_champion.log',level=logging.DEBUG,
+        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    article = downloader.loadArticle('https://champion.com.ua/football/2018/03/31/703170/vlasnik-ruhu-priviz-do-lvova-peris-hilton-na-vidkrittya-svogo-gotelyu-foto')
+    print(article.info())
+
 
 class Article(object):
   def __init__(self, url, j):
@@ -118,9 +119,11 @@ class Article(object):
 class Downloader(object):
 
   def __init__(self, rootPath):
-    self.baseUrl = 'http://www.champion.com.ua'
-    self.getLinksCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="tt41"]//div[@class="dpad63"]//a/@href\''
+    self.baseUrl = 'https://www.champion.com.ua'
+    self.getLinksCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="listing listing-light mb-3"]//div[@class="listing__itm"]//a/@href\''
     self.rootPath = rootPath #'/home/vlad/Dokumente/python/news_lib'
+    self.maxDownloadThreads = 30
+
 
   def getNewsForDate(self, date):
     print('get news for ' + date.strftime('%d.%m.%Y'))
@@ -189,17 +192,17 @@ class Downloader(object):
 
   def loadArticle(self, url):
     cmd = (downloader_common.XIDEL_CMD.format(url) +
-           ' --xpath \'//div[@class="tt6" or @class="tt41 white"]//div[@class="tit3"]/text()\'' #datetime
-           ' --xpath \'//div[@class="mtext _ga1_on_"]//h1[@class="dop3" or @class="main"]\'' #title
-           ' --xpath \'//div[@class="mtext _ga1_on_"]//div[@class="subtitle"]\'' #summary
-           ' --xpath \'//div[@class="mtext _ga1_on_"]//div[@class="dummy"]\'' #article text
+           ' --xpath \'//article[@class="article"]//div[@class="listing__itm__meta"]/span[@class="listing__itm__date"]\'' #datetime
+           ' --xpath \'//article[@class="article"]//h1[@class="article__title" or @class="main"]\'' #title
+           ' --xpath \'//article[@class="article"]//div[@class="subtitle"]\'' #summary
+           ' --xpath \'//article[@class="article"]//div[@class="dummy"]\'' #article text
            ' --output-format=json-wrapped' #output as json
-           ' --output-encoding=windows-1251')  #pravda.com.ua uses encoding=windows-1251
+           ' --output-encoding=utf-8')  
 
     #xidel http://www.champion.com.ua/basketball/2000/09/29/90601/ -q --xpath '//div[@class="tt41 white"]//div[@class="tit3"]'
     #print('cmd: '+cmd)
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-    result = p.communicate()[0].decode('windows-1251')
+    result = p.communicate()[0].decode('utf-8')
     #print(result)
     jsonArt = json.loads(result)
 
@@ -207,9 +210,13 @@ class Downloader(object):
       return None
 
     aTextCmd = (downloader_common.XIDEL_CMD.format(url) +
-       ' --xpath \'//div[@class="tt6" or @class="tt41 white"]//div[@class="mtext _ga1_on_"]/node()[not(h1[@class="dop3"] and h1[@class="main"] and div[@class="subtitle"])]\'' #article text with title
+       # ' --xpath \'//div[@class="tt6" or @class="tt41 white"]//div[@class="mtext _ga1_on_"]/node()[not(h1[@class="dop3"] and h1[@class="main"] and div[@class="subtitle"])]\'' #article text with title
+       ' --xpath \'//article[@class="article"]//div[@class="article__content"]/node()[not(self::table[@class="tb_center"] '
+       '       or self::iframe[@class="instagram-media instagram-media-rendered"]'
+       '       or self::blockquote[@class="instagram-media"]'
+       '       or self::blockquote[@class="twitter-tweet"])]\'' #article text with title
        ' --output-format=html' #output as html
-       ' --output-encoding=windows-1251')  #pravda.com.ua uses encoding=windows-1251
+       ' --output-encoding=utf-8')  
     jsonArt[3] = self.loadArticleTextFromHtml(aTextCmd)
 
     article = None
@@ -225,7 +232,7 @@ class Downloader(object):
 
   def loadArticleTextFromHtml(self, xidelCmd):
     p = subprocess.Popen(xidelCmd, shell=True, stdout=subprocess.PIPE)
-    origHtml = p.communicate()[0].decode('windows-1251')
+    origHtml = p.communicate()[0].decode('utf-8')
     logging.debug(">> loadArticleTextFromHtml()")
     logging.debug(origHtml)
     #print(result)
@@ -280,14 +287,32 @@ class Downloader(object):
     logging.basicConfig(filename='downloader_champion.log',level=logging.INFO)
     date = datetime.datetime.strptime(sDateFrom, '%d.%m.%Y').date()
     dateTo = datetime.datetime.strptime(sDateTo, '%d.%m.%Y').date()
+    logging.info("Job %s started" % ("downloader_champion"))
 
+    dateList = []
     while (date < dateTo):
-      content = self.fb2(date)
-      if len(content) > 0:
-        with open(self.rootPath+'/champion/'+str(date.year)+'/champion_'+str(date)+'.fb2', "w") as fb2_file:
-          fb2_file.write(content)
+      dateList.append(date)
       date += datetime.timedelta(days=1)
-    logging.info("Job completed")
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=self.maxDownloadThreads) as executor:
+      futureContents = {executor.submit(self.fb2, curDate): curDate for curDate in dateList}
+      for future in concurrent.futures.as_completed(futureContents):
+        curDate = futureContents[future]
+        try:
+          content = future.result()
+          if len(content) > 0:
+            outFileName = '%s/champion/%s/champion_%s.fb2' % (self.rootPath, str(curDate.year), str(curDate))
+            print("Write to file: " + outFileName)
+            with open(outFileName, "w") as fb2_file:
+              fb2_file.write(content)
+        except SystemExit:
+          raise
+        except BaseException:
+          exc_type, exc_value, exc_traceback = sys.exc_info()
+          print("Unexpected error: ", exc_type)
+          traceback.print_exception(exc_type, exc_value, exc_traceback)
+
+    logging.info("Job %s completed" % ("downloader_champion"))
 
 """
 downloader = Downloader()
@@ -316,3 +341,5 @@ print(article.info())
 #article = downloader.loadArticle('http://www.pravda.com.ua/news/2000/04/19/2980668/') #ukr text
 #article = downloader.loadArticle('http://www.pravda.com.ua/articles/2012/11/22/6977980/') #rus text
 """
+
+run()

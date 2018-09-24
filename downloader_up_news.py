@@ -9,6 +9,7 @@ import stats
 import re
 import downloader_common
 
+# TODO reload files with "404 Not Found" (2006/up_news_2006-03-29.fb2 ...)
 
 def run():
     rootPath = downloader_common.rootPath
@@ -189,7 +190,7 @@ class Downloader(object):
                 bAddToList = False
                 logging.error("Article is empty. URL: "+self.baseUrl + line)
                 print(article.info())
-                sys.exit("Article is empty. URL: "+self.baseUrl + line)
+                #sys.exit("Article is empty. URL: "+self.baseUrl + line)
             if len(article.body) == 1:
                 logging.warning("Article has one paragraph. URL: "+self.baseUrl + line)
             if bAddToList:
