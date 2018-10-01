@@ -12,46 +12,71 @@ import downloader_common
 # починаючи з "Дзеркало тижня. Україна" №26 30 червня — 7 июля 2000 (http://gazeta.dt.ua/archives/293)
 #
 
+def run():
+    rootPath = downloader_common.rootPath
+    downloader = Downloader(rootPath)
+    logging.basicConfig(filename='downloader_dt_gazeta.log',level=logging.INFO,
+            format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    downloader.load(1139, 1168)
+
+def test():
+    rootPath = downloader_common.rootPath
+    downloader = Downloader(rootPath)
+
+    logging.basicConfig(filename='downloader_dt_gazeta.log',level=logging.DEBUG,
+        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    article = downloader.loadArticle('https://dt.ua/internal/ukrayina-shlyah-do-rabstva-265977_.html')
+    print(article.info())
+
 class Article(object):
   def __init__(self, url, j):
     self.url = ''
     if url is not None:
       self.url = url
 
-    self.dateAuthorStr = ''
-    self.author = ''
     self.dtStr = ''
-    if j[0] is not None:
-      self.dateAuthorStr = j[0]
-      i = 0
-      author = ''
-      for line in self.dateAuthorStr.split('\n'):
-        if i == 0:
-          author = line.strip() #first line must be author
-        i += 1
-        dtStr = line.strip()
-
-      if i > 1:
-        self.author = author
-        self.dtStr = dtStr
-      else:
-        if any(char.isdigit() for char in dtStr):
-          self.dtStr = dtStr #string contains digits -> this must be date
+    val = j[0]
+    if val is not None:
+      self.dtStr = val.strip()
+    if  len(self.dtStr) > 4:
+      self.timeStr = self.dtStr[-5:] # extract time (last 5 char)
+    else:
+      self.timeStr = '00:00'
 
     if  len(self.dtStr) > 7:
       self.dtStr = self.dtStr[:-7] # remove time (last seven char)
 
+    self.author = ''
+    val = None
+    if len(j) > 1:
+      val = j[1]
+    if val is not None:
+      if isinstance(val, str):
+        self.author = downloader_common.relpaceHtmlEntities(val)
+      elif isinstance(val, list):
+        self.author = downloader_common.relpaceHtmlEntities(', '.join(val))
+
+
     self.title = ''
-    if j[1] is not None:
-      if isinstance(j[1], str):
-        self.title = downloader_common.relpaceHtmlEntities(j[1])
-      elif isinstance(j[1], list):
-        self.title = downloader_common.relpaceHtmlEntities(j[1][0])
+    val = j[2]
+    if val is not None:
+      if isinstance(val, str):
+        self.title = downloader_common.relpaceHtmlEntities(val.strip())
+      elif isinstance(val, list):
+        self.title = downloader_common.relpaceHtmlEntities(val[0].strip())
 
     self.summary = ''
+    val = j[3]
+    if val is not None:
+      if isinstance(val, str):
+        self.summary = downloader_common.relpaceHtmlEntities(val.strip())
+      elif isinstance(val, list):
+        self.summary = downloader_common.relpaceHtmlEntities('\n'.join(val)).strip()
 
     self.body = list()
-    val = j[2]
+    val = j[4]
     if val is not None:
       locText = ''
       if isinstance(val, str):
@@ -78,6 +103,8 @@ class Article(object):
     ret = '<section><title><p>' + downloader_common.escapeXml(self.title) + '</p></title>'
     if len(self.author) > 0:
       ret += '\n <p><strong>' + downloader_common.escapeXml(self.author) + '</strong></p>'
+    if len(self.summary) > 0:
+      ret += '\n <p><strong>' + downloader_common.escapeXml(self.summary) + '</strong></p>'
     ret += '\n <empty-line/>'
     for line in self.body:
       ret += '\n <p>' + downloader_common.escapeXml(line) + '</p>'
@@ -86,25 +113,27 @@ class Article(object):
 
 class Downloader(object):
 
-  def __init__(self):
-    self.baseUrl = 'https://gazeta.dt.ua'
-    self.baseUrl1 = '//gazeta.dt.ua'
-    self.getLinksCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="holder"]//a/@href\''
-    self.getTitleCmd = downloader_common.XIDEL_CMD + ' --xpath \'//span[@class="main_title"]/node()\' --output-format=json-wrapped'
+  def __init__(self, rootPath):
+    self.baseUrl = 'https://dt.ua'
+    self.baseUrl1 = '//dt.ua'
+    self.rootPath = rootPath 
+    self.getLinksCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@id="issue-full"]//span[@class="news_link"]//a[@class="news_anounce"]/@href\''
+    self.getTitleCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="issue_head"]//span[@class="text_line"]/node()\' --output-format=json-wrapped'
     self.replDict = {'января':'січня', 'февраля':'лютого', 'марта':'березня', 'апреля':'квітня', 'мая':'травня', 'июня':'червня', 'июля':'липня',
                      'августа':'серпня', 'сентября':'вересня', 'октября':'жовтня', 'ноября':'листопада', 'декабря':'грудня', 'Зміст':''}
+    self.yearStr = "2018"
 
   def getTitleForNumber(self, num):
-    url = self.baseUrl + '/archives/%d' % (num)
+    url = self.baseUrl + '/gazeta/issue/%d' % (num)
     # replace {0} with url
     cmd = self.getTitleCmd.format(url)
     #print('cmd: ' +cmd)
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     result = p.communicate()[0].decode('utf-8')
     jsonRes = json.loads(result)
-    title = 'Дзеркало тижня. Україна Nr %d' % (num)
+    title = 'Дзеркало тижня. (Nr %d) ' % (num)
     if jsonRes is not None and len(jsonRes) > 0:
-      title = " ".join(jsonRes[0])
+      title = title + " ".join(jsonRes[0])
       # replace russian months
       pattern = re.compile(r'\b(' + '|'.join(self.replDict.keys()) + r')\b')
       title = pattern.sub(lambda x: self.replDict[x.group()], title)
@@ -113,7 +142,7 @@ class Downloader(object):
 
   def getNewsForNumber(self, num):
     print('get news for %d' % (num))
-    url = self.baseUrl + '/archives/%d' % (num)
+    url = self.baseUrl + '/gazeta/issue/%d' % (num)
     print('url: ' +url)
     # replace {0} with url
     articleList = list()
@@ -121,7 +150,7 @@ class Downloader(object):
     print('cmd: ' +cmd)
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for ln in p.stdout:
-      line = ln.decode('utf-8').strip()
+      line = self.baseUrl + ln.decode('utf-8').strip()
       if len(line) > 0 and (line.startswith(self.baseUrl) or line.startswith(self.baseUrl1)) and not line.startswith(self.baseUrl+'/sitemap'):
         if line.startswith(self.baseUrl1):
             line = 'https:'+line
@@ -131,8 +160,7 @@ class Downloader(object):
           if article is not None:
             articleList.append(article)
           else:
-            #exit
-            sys.exit("Article can not be loaded from URL: "+ line)
+            logging.warning("Article can not be loaded from URL: "+line)
         except SystemExit:
           raise
         except:
@@ -141,12 +169,14 @@ class Downloader(object):
 
   def loadArticle(self, url):
     cmd = (downloader_common.XIDEL_CMD.format(url) +
-          #' -e "css(\'div[class=central_article] div[class=date]\')"' # author and date
-           ' --xpath \'//div[@class="central_article"]//div[@class="date"]\'' #author and date
-           #' --xpath \'//div[@class="central_article"]//h1[@class="title"]/node()[not(self::div)]\'' #title
-           ' --xpath \'//div[@class="central_article"]//h1[@class="title"]/text()[1]\'' #title
-           #' -e "css(\'div[class=article_body] div[class=article_bd]\')"' #article
-           ' --xpath \'//div[@class="article_body"]//div[@class="article_bd"]/div[@class="txt body_gzn"]/node()[not(self::script)]\'' #title
+           ' --xpath \'//div[@class="central_article"]//div[@class="top_article"]//span[@class="date"]\'' # date
+           ' --xpath \'//div[@class="central_article"]//div[@class="article_left"]//div[@class="auth_info"]'
+                                '//ul[@class="auth_list"]//li[@class="auth_item"]//span[@class="name"]\'' #author
+           ' --xpath \'//div[@class="central_article"]//div[@class="top_article"]//h1[@class="title"]/text()[1]\'' #title
+           ' --xpath \'//div[@class="central_article"]//div[@class="article_center"]//div[@class="article_body"]'
+                                                    '//div[@class="summary"]/node()[not(self::script)]\'' #summary
+           ' --xpath \'//div[@class="central_article"]//div[@class="article_center"]//div[@class="bottom_block"]'
+                           '//div[@class="article_body"]//div[@class="text"]/node()[not(self::script)]\'' #text
            ' --output-format=json-wrapped') #output as json
     #print('cmd: '+cmd)
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
@@ -155,7 +185,10 @@ class Downloader(object):
     jsonArt = json.loads(result)
     article = None
     try:
-      article = Article(url, jsonArt)
+      if len(jsonArt) > 0 :
+        article = Article(url, jsonArt)
+      else:
+        return None
     except SystemExit:
       raise
     except:
@@ -167,7 +200,7 @@ class Downloader(object):
 
   def fb2(self, num):
     today = datetime.date.today()
-    url = self.baseUrl + '/archives/%d' % (num)
+    url = self.baseUrl + '/gazeta/issue/%d' % (num)
     title = self.getTitleForNumber(num)
     print('get news for ', title)
     articleList = self.getNewsForNumber(num)
@@ -175,6 +208,11 @@ class Downloader(object):
       print('No articles for ', url)
       logging.warning("No articles for: "+ url)
       return ''
+    yearStr = articleList[0].dtStr[-4:]
+    if yearStr.isdigit():
+      self.yearStr = yearStr
+    else:
+      self.yearStr = str(today.year)
     ret = '<?xml version="1.0" encoding="utf-8"?>'
     ret += '\n<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">'
     ret += '\n<description>'
@@ -202,25 +240,17 @@ class Downloader(object):
     ret += '\n</FictionBook>'
     return ret
 
+  def load(self, numFrom, numTo):
 
-downloader = Downloader()
+    num = numFrom
 
-logging.basicConfig(filename='downloader_dt_gazeta.log',level=logging.INFO,
-        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+    while (num < numTo):
+      content = self.fb2(num)
+      if len(content) > 0:
+        with open(downloader_common.rootPath+'/dt_gazeta/'+self.yearStr+'/dt_gazeta_'+str(num)+'.fb2', "w") as fb2_file:
+          fb2_file.write(content)
+      num += 1
+    logging.info("Job completed")
 
-num = 1110
+run()
 
-while (num < 1112):
-  content = downloader.fb2(num)
-  if len(content) > 0:
-    with open(downloader_common.rootPath+'/dt_gazeta/2017/dt_gazeta_'+str(num)+'.fb2', "w") as fb2_file:
-      fb2_file.write(content)
-  num += 1
-
-"""
-downloader.getNewsForNumber(1042)
-#title = downloader.getTitleForNumber(1042)
-#print(title)
-#art = downloader.loadArticle('http://gazeta.dt.ua/EDUCATION/ctatus-chi-viznannya-_.html')
-#art.info()
-"""
