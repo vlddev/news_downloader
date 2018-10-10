@@ -1,48 +1,33 @@
 import sys
+import os
 import traceback
 import datetime
 import subprocess
 import json
 import logging
+import re
 from bs4 import BeautifulSoup
+import urllib.request
 import stats
 import downloader_common
 
-
 def run():
-    rootPath = downloader_common.rootPath
-    downloader = Downloader(rootPath)
+    downloader = Downloader()
 
     logging.basicConfig(filename='downloader_eurointegration.log', level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-    strdate = '28.12.2017'
-    date = datetime.datetime.strptime(strdate, '%d.%m.%Y').date()
-    dateTo = datetime.datetime.strptime('01.01.2018', '%d.%m.%Y').date()
-
-    while (date < dateTo):
-      content = downloader.fb2(date)
-      if len(content) > 0:
-        with open(rootPath+'/eurointegration/'+str(date.year)+'/eurointegration_'+str(date)+'.fb2', "w") as fb2_file:
-          fb2_file.write(content)
-      date += datetime.timedelta(days=1)
+    downloader.loadThreaded('03.04.2018', '01.09.2018')
 
 
 def test():
-    rootPath = downloader_common.rootPath
-    downloader = Downloader(rootPath)
+    downloader = Downloader()
 
     logging.basicConfig(filename='downloader_eurointegration.log', level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-    article = downloader.loadArticle('http://www.eurointegration.com.ua/articles/2014/05/27/7023100/')
+    article = downloader.loadArticle('https://www.eurointegration.com.ua/news/2018/04/2/7079822/')
     print(article.info())
-
-    """
-
-    article = downloader.loadArticle('http://www.epravda.com.ua/publications/2017/03/2/622180/')
-    print(article.info())
-    """
 
 
 class Article(object):
@@ -59,7 +44,11 @@ class Article(object):
     if val is not None:
       self.dtStr = val
     if  len(self.dtStr) > 4:
-      self.timeStr = self.dtStr[-5:] # extract time (last five char)
+      matchObj = re.search(r'\d{2}:\d{2}', self.dtStr)
+      if matchObj:
+        self.timeStr = matchObj.group()
+      else:
+        self.timeStr = '00:00'
     else:
       self.timeStr = '00:00'
 
@@ -123,12 +112,12 @@ class Article(object):
     return ret
 
 
-class Downloader(object):
+class Downloader(downloader_common.AbstractDownloader):
 
-  def __init__(self, rootPath):
-    self.baseUrl = 'http://www.eurointegration.com.ua'
-    self.getLinksCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="fblock"]//div[@class="rpad"]//p//a/@href\''
-    self.rootPath = rootPath #'/home/vlad/Dokumente/python/news_lib'
+  def __init__(self):
+    self.baseUrl = 'https://www.eurointegration.com.ua'
+    self.getLinksCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="block_archive_list"]//div[@class="article__title"]//a/@href\''
+    super().__init__('eurointegration')
 
   def getNewsForDate(self, date):
     print('get news for ' + date.strftime('%d.%m.%Y'))
@@ -196,36 +185,27 @@ class Downloader(object):
     return sorted(articleList, key=lambda x: x.timeStr)
 
   def loadArticle(self, url):
+    localFile = self.storeUrlToFile(url)
     # xpath for articles
-    cmd = (downloader_common.XIDEL_CMD.format(url) +
-           ' --xpath \'//div[@class="rpad"]//span[@class="dt2"]\'' #time
-           ' --xpath \'//div[@class="rpad"]//h1[@class="title"]\'' #title
-           ' --xpath \'//div[@class="rpad"]//div[@class="dummy text"]\'' #article  text
-           ' --output-format=json-wrapped' #output as json
-           ' --output-encoding=windows-1251')  #pravda.com.ua uses encoding=windows-1251
+    cmd = (downloader_common.XIDEL_CMD.format(localFile) +
+           ' --xpath \'//article[@class="post"]//header[@class="post__header"]//div[@class="post__time"]\'' #time
+           ' --xpath \'//article[@class="post"]//h1[@class="post__title"]\'' #title
+           ' --xpath \'//article[@class="post"]//div[@class="dummy text"]\'' #article  text
+           ' --output-format=json-wrapped') #output as json
     #print('cmd: '+cmd)
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-    result = p.communicate()[0].decode('windows-1251')
+    result = p.communicate()[0].decode('utf-8')
     #print(result)
     jsonArt = json.loads(result)
 
     if len(jsonArt) == 0:
       return None
 
-    aTextCmd = (downloader_common.XIDEL_CMD.format(url) +
-       ' --xpath \'//div[@class="rpad"]//div[@class="text"]\'' #article text
-       ' --output-format=html' #output as html
-       ' --output-encoding=windows-1251')  #pravda.com.ua uses encoding=windows-1251
+    aTextCmd = (downloader_common.XIDEL_CMD.format(localFile) +
+       ' --xpath \'//article[@class="post"]//div[@class="post__text"]\'' #article text
+       ' --output-format=html') #output as html
 
     jsonArt[2] = self.loadArticleTextFromHtml(aTextCmd)
-
-    """ xpath for articles until 31.12.2015
-    # xpath for articles after 31.12.2015
-    aTextCmd = (downloader_common.XIDEL_CMD.format(url) +
-       ' --xpath \'//div[@class="block_post"]//div[@class="post__text"]\'' #article text
-       ' --output-format=html' #output as html
-       ' --output-encoding=windows-1251')  #pravda.com.ua uses encoding=windows-1251
-    """
 
     article = None
     try:
@@ -235,12 +215,25 @@ class Downloader(object):
       print ("Unexpected error: ", exc_type, "In article ", result)
       traceback.print_exception(exc_type, exc_value, exc_traceback)
     #article.info()
+    os.remove(localFile)
 
     return article
 
+  def storeUrlToFile(self, url):
+    # store file locally and do encoding convertion (xidel can't mange it correctly)
+    f = urllib.request.urlopen(url)
+    myfile = f.read()
+    content = myfile.decode('windows-1251').replace('windows-1251', 'utf-8')
+    content = downloader_common.relpaceHtmlEntities(content)
+    fileName = '/tmp/'+url.replace('https://','').replace('/','_') + '.html'
+    with open(fileName, "w") as fb2_file:
+      fb2_file.write(content)
+    return fileName
+
+
   def loadArticleTextFromHtml(self, xidelCmd):
     p = subprocess.Popen(xidelCmd, shell=True, stdout=subprocess.PIPE)
-    origHtml = p.communicate()[0].decode('windows-1251')
+    origHtml = p.communicate()[0].decode('utf-8')
     logging.debug(">> loadArticleTextFromHtml()")
     logging.debug(origHtml)
     #print(result)
@@ -294,21 +287,6 @@ class Downloader(object):
     ret += '\n</body>'
     ret += '\n</FictionBook>'
     return ret
-
-  def load(self, sDateFrom, sDateTo):
-    logging.basicConfig(filename='downloader_eurointegration.log', level=logging.INFO,
-        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
-    date = datetime.datetime.strptime(sDateFrom, '%d.%m.%Y').date()
-    dateTo = datetime.datetime.strptime(sDateTo, '%d.%m.%Y').date()
-
-    while (date < dateTo):
-      content = self.fb2(date)
-      if len(content) > 0:
-        with open(self.rootPath+'/eurointegration/'+str(date.year)+'/eurointegration_'+str(date)+'.fb2', "w") as fb2_file:
-          fb2_file.write(content)
-      date += datetime.timedelta(days=1)
-    logging.info("Job completed")
-
 
 if __name__ == '__main__':
     run()
