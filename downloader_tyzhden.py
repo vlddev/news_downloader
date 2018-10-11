@@ -9,7 +9,25 @@ from bs4 import BeautifulSoup
 import stats
 import downloader_common
 
-class Article(object):
+def run():
+    downloader = Downloader()
+
+    logging.basicConfig(filename='downloader_tyzhden.log', level=logging.INFO,
+        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    downloader.load(529, 570)
+
+
+def test():
+    downloader = Downloader()
+
+    logging.basicConfig(filename='downloader_tyzhden.log', level=logging.DEBUG,
+        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    article = downloader.loadArticle('http://tyzhden.ua/Columns/50/220779')
+    print(article.info())
+
+class Article(downloader_common.BaseArticle):
   def __init__(self, url, j):
     self.url = ''
     if url is not None:
@@ -36,7 +54,7 @@ class Article(object):
       if isinstance(val, str):
         locText = val
       elif isinstance(val, list):
-        locText = val[0]
+        locText = '\n'.join(val)
       text = locText.strip() # trim
 
       #remove HTML comments
@@ -46,7 +64,10 @@ class Article(object):
       for line in text.split('\n'):
         proLine = downloader_common.relpaceHtmlEntities(line.strip())
         if len(proLine) > 0 and not proLine.startswith('Читайте також:'):
-          self.body.append(proLine)
+          if (proLine.startswith('Відповідно до угоди, статті the Economist')):
+            self.body.append('content deleted')
+          else:
+            self.body.append(proLine)
 
     self.summary = ''
     if len(j) > 3:
@@ -58,42 +79,26 @@ class Article(object):
     if len(j) > 4:
       val = j[4]
       if val is not None:
+        if isinstance(val, list):
+          val = '; '.join(val)
+        
         if 'Версія для друку' not in val:
           self.author = val.strip()
 
     if len(j) > 5 and len(self.author) < 1:
       val = j[5]
       if val is not None:
+        if isinstance(val, list):
+          val = '; '.join(val)
         self.author = val.strip()
 
-  def info(self):
-    print('dtStr: '+self.dtStr);
-    print('timeStr: '+self.timeStr);
-    print('url: '+self.url);
-    print('title: '+str(self.title));
-    print('author: '+str(self.author));
-    print('summary: '+str(self.summary));
-    print('body: ' + "\n".join(self.body));
-
-  def fb2(self):
-    ret = '<section><title><p>' + downloader_common.escapeXml(self.title) + '</p></title>'
-    if len(self.author) > 0:
-      ret += '\n <p>' + downloader_common.escapeXml(self.author) + '</p>'
-      ret += '\n <empty-line/>'
-    if len(self.summary) > 0:
-      ret += '\n <p><strong>' + downloader_common.escapeXml(self.summary) + '</strong></p>'
-      ret += '\n <empty-line/>'
-    for line in self.body:
-      ret += '\n <p>' + downloader_common.escapeXml(line) + '</p>'
-    ret += '\n</section>'
-    return ret
 
 class Downloader(object):
 
   def __init__(self):
     self.baseUrl = 'http://tyzhden.ua'
-    self.getLinksCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="ap3"]//div[@class="ap2"]//@href\''
-    self.getNumDateCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="ap3"]//h1[@class="ap1"]//span[@class="bf2 ap1"]\''
+    self.getLinksCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="ap2"]//div[@class="bf2 ap6"]//@href\''
+    self.getNumDateCmd = downloader_common.XIDEL_CMD + ' --xpath \'//h1[@class="ap1"]//span[@class="bf2 ap1"]\''
     self.numDate = None
     self.dict = {" січня, ":".01.", " лютого, ":".02.", " березня, ":".03.",
                  " квітня, ":".04.", " травня, ":".05.", " червня, ":".06.",
@@ -186,14 +191,23 @@ class Downloader(object):
     return articleList
 
   def loadArticle(self, url):
-    cmd = (downloader_common.XIDEL_CMD.format(url) +
-           ' --xpath \'//table[@class="ap6"]//div[@class="bf4"]/span[1]\'' #date
-           ' --xpath \'//h1[@class="ap5"]\'' #title
-           ' --xpath \'//div[@class="bf3 ap1 _ga1_on_" or @class="bf3 ap2 _ga1_on_" or @class="bf3 ap1 _ga1_on_ io-article-body" or @class="bf3 ap2 _ga1_on_ io-article-body"]\'' #article text
-           ' --xpath \'//div[@class="bf1"]\'' #article summary
-           ' --xpath \'//table[@class="ap6"]//div[@class="bf4"]/span[3]\'' #author [optional]
-           ' --xpath \'//table[@class="ap6"]//div[@class="bf3 ap4"]\'' #author 2 [optional]
-           ' --output-format=json-wrapped') #output as json
+    if ('Columns/50' in url):
+      cmd = (downloader_common.XIDEL_CMD.format(url) +
+          ' --xpath \'//table[@class="ap6"]//div[@class="bf4"]/span[1]\'' #date
+          ' --xpath \'//h1[@class="ap5"]\'' #title
+          ' --xpath \'//div[@class="bf3 ap1 _ga1_on_" or @class="bf3 ap2 _ga1_on_" or @class="bf3 ap1 _ga1_on_ io-article-body" or @class="bf3 ap2 _ga1_on_ io-article-body"]\'' #article text
+          ' --xpath \'//div[@class="bf1"]\'' #article summary
+          ' --xpath \'//table[@class="ap6"]//div[@class="bf4"]/span[3]\'' #author [optional]
+          ' --xpath \'//table[@class="ap6"]//div[@class="bf3 ap4"]/a\'' #author 2 [optional]
+          ' --output-format=json-wrapped') #output as json
+    else:
+      cmd =  (downloader_common.XIDEL_CMD.format(url) +
+          ' --xpath \'//article[@class="Cheat orphan"]//div[@class="CheatHeader__top"]//span[@class="PublicationTime__date"]\'' #date
+          ' --xpath \'//article[@class="Cheat orphan"]//h1[@class="CheatHeader__title"]\'' #title
+          ' --xpath \'//div[@class="CheatBody io-article-body"]/div[1]/node()[not(self::blockquote)]\'' #article text
+          ' --xpath \'//div[@class="bf1"]\'' #article summary
+          ' --xpath \'//article[@class="Cheat orphan"]//div[@class="CheatHeader__top"]//a[@class="io-author"]\'' #author [optional]
+          ' --output-format=json-wrapped') #output as json
 
     #xidel http://tyzhden.ua/Publication/1254 -q --xpath '//table[@class="ap6"]//div[@class="bf4"]/span[1]'
     #xidel http://tyzhden.ua/Publication/1254 -q --xpath '//div[@class="bf3 ap1 _ga1_on_" or @class="bf3 ap2 _ga1_on_"]'
@@ -213,6 +227,7 @@ class Downloader(object):
     except:
       exc_type, exc_value, exc_traceback = sys.exc_info()
       print ("Unexpected error: ", exc_type, "In article ", result)
+      logging.error("Unexpected error: {}. In article {}".format(exc_type, result))
       traceback.print_exception(exc_type, exc_value, exc_traceback)
     #article.info()
     print ("len(article.body) = " + str(len(article.body)))
@@ -296,34 +311,29 @@ class Downloader(object):
     ret += '\n</FictionBook>'
     return ret
 
-downloader = Downloader()
+  def load(self, numFrom, numTo):
 
-logging.basicConfig(filename='downloader_tyzh.log',level=logging.INFO,
-        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+    num = numFrom
 
-num = 525
+    while (num < numTo):
+      try:
+        content = self.fb2(num)
+        if len(content) > 0:
+          with open(str(self.numDate.year)+'/tyzhden_'+str(num)+'.fb2', "w") as fb2_file:
+            fb2_file.write(content)
+        else:
+          msg = "No content for number {0}.".format(num)
+          print(msg)
+          logging.warning(msg)
+      except KeyboardInterrupt:
+        sys.exit("Download interrupted.")
+      except:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        traceback.print_exception(exc_type, exc_value, exc_traceback)
+        sys.exit("Unexpected error:  "+ exc_type)
+      num += 1
+    logging.info("Job completed")
 
-while (num < 530): #last 488
-  try:
-    content = downloader.fb2(num)
-    if len(content) > 0:
-      with open(str(downloader.numDate.year)+'/tyzhden_'+str(num)+'.fb2', "w") as fb2_file:
-        fb2_file.write(content)
-    else:
-      msg = "No content for number {0}.".format(num)
-      print(msg)
-      logging.warning(msg)
-  except KeyboardInterrupt:
-    sys.exit("Download interrupted.")
-  except:
-    exc_type, exc_value, exc_traceback = sys.exc_info()
-    traceback.print_exception(exc_type, exc_value, exc_traceback)
-    sys.exit("Unexpected error:  "+ exc_type)
-  num += 1
 
-"""
-logging.basicConfig(filename='downloader_um_debug.log',level=logging.DEBUG)
-#downloader.getNewsForNumber(1)
-article = downloader.loadArticle('http://tyzhden.ua/Publication/482')
-print(article.info())
-"""
+if __name__ == '__main__':
+    run()
