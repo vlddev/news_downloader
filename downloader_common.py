@@ -28,6 +28,40 @@ def escapeXml(val):
   else:
     return val
 
+class BaseArticle(object):
+  def __init__(self):
+    self.dtStr = ''
+    self.timeStr = ''
+    self.url = ''
+    self.title = ''
+    self.author = ''
+    self.summary = ''
+    self.body = None
+
+
+  def info(self):
+    print('dtStr: '+self.dtStr)
+    print('timeStr: '+self.timeStr)
+    print('url: '+self.url)
+    print('title: '+str(self.title))
+    print('author: '+str(self.author))
+    print('summary: '+str(self.summary))
+    print('body: ' + "\n".join(self.body))
+
+  def fb2(self):
+    ret = '<section><title><p>' + escapeXml(self.title) + '</p></title>'
+    if len(self.author) > 0:
+      ret += '\n <p>' + escapeXml(self.author) + '</p>'
+      ret += '\n <empty-line/>'
+    if len(self.summary) > 0:
+      ret += '\n <p><strong>' + escapeXml(self.summary) + '</strong></p>'
+      ret += '\n <empty-line/>'
+    for line in self.body:
+      ret += '\n <p>' + escapeXml(line) + '</p>'
+    ret += '\n</section>'
+    return ret
+
+
 class AbstractDownloader(object):
 
   def __init__(self, siteName):
