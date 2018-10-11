@@ -284,7 +284,6 @@ class Downloader(object):
     return ret
 
   def load(self, sDateFrom, sDateTo):
-    logging.basicConfig(filename='downloader_champion.log',level=logging.INFO)
     date = datetime.datetime.strptime(sDateFrom, '%d.%m.%Y').date()
     dateTo = datetime.datetime.strptime(sDateTo, '%d.%m.%Y').date()
     logging.info("Job %s started" % ("downloader_champion"))
@@ -314,32 +313,6 @@ class Downloader(object):
 
     logging.info("Job %s completed" % ("downloader_champion"))
 
-"""
-downloader = Downloader()
-#logging.basicConfig(filename='downloader_debug.log',level=logging.DEBUG)
 
-rootPath = '/home/vlad/Dokumente/python/news_lib'
-logging.basicConfig(filename='downloader_champion.log',level=logging.INFO)
-
-
-strdate = '14.09.2000'
-date = datetime.datetime.strptime(strdate, '%d.%m.%Y').date()
-#dateTo = datetime.datetime.strptime('17.09.2000', '%d.%m.%Y').date()
-dateTo = datetime.datetime.strptime('01.01.2017', '%d.%m.%Y').date()
-
-while (date < dateTo):
-  content = downloader.fb2(date)
-  if len(content) > 0:
-    with open(rootPath+'/champion/'+str(date.year)+'/champion_'+str(date)+'.fb2', "w") as fb2_file:
-      fb2_file.write(content)
-  date += datetime.timedelta(days=1)
-
-
-#downloader.getNewsForDate('21.01.2011')
-article = downloader.loadArticle('http://www.champion.com.ua/basketball/2000/09/29/90601/')
-print(article.info())
-#article = downloader.loadArticle('http://www.pravda.com.ua/news/2000/04/19/2980668/') #ukr text
-#article = downloader.loadArticle('http://www.pravda.com.ua/articles/2012/11/22/6977980/') #rus text
-"""
-
-run()
+if __name__ == '__main__':
+  run()
