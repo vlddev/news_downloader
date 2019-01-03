@@ -10,23 +10,20 @@ import downloader_common
 
 def mode1():
     rootPath = downloader_common.rootPath
-    dateFrom = '01.04.2018'
-    dateTo = '01.09.2018'
+    dateFrom = '18.12.2018'
+    dateTo = '01.01.2019'
 
     dlModules = [
-        'downloader_champion', 'downloader_up_news', 'downloader_epravda',
+        'downloader_champion', 'downloader_up_news', 'downloader_epravda', 'downloader_eurointegration',
         'downloader_dt_news', 'downloader_gazeta_ua', 'downloader_lb',
-        'downloader_unian', 'downloader_zaxid', 'downloader_zik',
-        'downloader_eurointegration'
+        'downloader_unian', 'downloader_zaxid', 'downloader_zik'
     ]
 
     for dlModule in dlModules:
         try:
-            DownloaderClass = getattr(
-                importlib.import_module(dlModule), "Downloader")
+            DownloaderClass = getattr(importlib.import_module(dlModule), "Downloader")
             downloader = DownloaderClass(rootPath)
-            job = threading.Thread(
-                target=downloader.load, args=(dateFrom, dateTo))
+            job = threading.Thread(target=downloader.load, args=(dateFrom, dateTo))
             job.start()
         except Exception:
             exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -115,4 +112,4 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s',
     datefmt='%d.%m.%Y %H:%M:%S')
-mode4()
+mode1()
