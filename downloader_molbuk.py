@@ -138,8 +138,7 @@ class Downloader(object):
                     print('timeList: ' + str(jsonObj[1]))
                     sys.exit("len(urlList) != len(timeList). STOP.")
 
-                for i in range(0,
-                               len(urlList)):  # loop over all articles on page
+                for i in range(0, len(urlList)):  # loop over all articles on page
                     line = urlList[i].strip()
                     articleUrl = line
                     if len(line) > 0 and articleUrl not in downloadedUrls:
@@ -148,11 +147,8 @@ class Downloader(object):
                             article = self.loadArticle(articleUrl)
                             tryCount = 3
                             while article is None and tryCount > 0:
-                                print('WARNING: retry load article (attempt ' +
-                                      str(4 - tryCount) + '): ' + articleUrl)
-                                logging.warn(
-                                    'retry load article (attempt ' +
-                                    str(4 - tryCount) + '): ' + articleUrl)
+                                print('WARNING: retry load article (attempt ' + str(4 - tryCount) + '): ' + articleUrl)
+                                logging.warn('retry load article (attempt ' + str(4 - tryCount) + '): ' + articleUrl)
                                 article = self.loadArticle(articleUrl)
                                 tryCount -= 1
                             if article is not None:
@@ -164,54 +160,36 @@ class Downloader(object):
                                 else:
                                     if line in ['']:
                                         bAddToList = False
-                                        logging.error(
-                                            "IGNORE: Article is empty. URL: " +
-                                            articleUrl)
+                                        logging.error("IGNORE: Article is empty. URL: " + articleUrl)
                                     else:
                                         bAddToList = False
-                                        logging.error("Article is empty. URL: "
-                                                      + articleUrl)
+                                        logging.error("Article is empty. URL: " + articleUrl)
                                         article.info()
                                         # sys.exit("Article is empty. URL: "+ line)
-                                        logging.error(
-                                            "IGNORE: Article is empty. URL: " +
-                                            articleUrl)
+                                        logging.error("IGNORE: Article is empty. URL: " + articleUrl)
                                 if bAddToList:
-                                    if len(article.body
-                                           ) == 1 and len(text) > 1000:
-                                        logging.warning(
-                                            "Article (length = " +
-                                            str(len(text)) +
-                                            ") has one paragraph. URL: " +
-                                            articleUrl)
+                                    if len(article.body) == 1 and len(text) > 1000:
+                                        logging.warning("Article (length = " + str(len(text)) +
+                                            ") has one paragraph. URL: " + articleUrl)
                                     article.dtStr = timeList[i]
-                                    articleDateStr = article.dtStr.split(
-                                        ',', 1)[0].strip()
-                                    article.timeStr = article.dtStr.split(
-                                        ',', 1)[1].strip()
+                                    articleDateStr = article.dtStr.split(',', 1)[0].strip()
+                                    article.timeStr = article.dtStr.split(',', 1)[1].strip()
                                     if curDateStr != articleDateStr:
                                         curDate = None
                                         if curDateStr == self.todayStr:
                                             curDate = datetime.date.today()
                                         elif curDateStr == self.yesterdayStr:
-                                            curDate = datetime.date.today(
-                                            ) - datetime.timedelta(days=1)
+                                            curDate = datetime.date.today() - datetime.timedelta(days=1)
                                         else:
-                                            curDate = datetime.datetime.strptime(
-                                                curDateStr, '%d-%m-%Y').date()
+                                            curDate = datetime.datetime.strptime(curDateStr, '%d-%m-%Y').date()
                                         # store list for curDate
-                                        print('store articles for: ' +
-                                              str(curDate))
+                                        print('store articles for: ' + str(curDate))
                                         articleList.reverse()
-                                        content = self.fb2(
-                                            curDate, articleList)
+                                        content = self.fb2(curDate, articleList)
                                         if len(content) > 0:
                                             # with open('molbuk/'+str(curDate.year)+'/molbuk'+str(curDate)+'.fb2', "w") as fb2_file:
-                                            with open(
-                                                    self.rootPath + '/molbuk/'
-                                                    + str(curDate.year) +
-                                                    '/molbuk' + str(curDate) +
-                                                    '.fb2', "w") as fb2_file:
+                                            with open(self.rootPath + '/molbuk/' + str(curDate.year) +
+                                                    '/molbuk' + str(curDate) + '.fb2', "w") as fb2_file:
                                                 fb2_file.write(content)
                                         # clear all lists
                                         del articleList[:]
@@ -224,16 +202,13 @@ class Downloader(object):
                                     articleList.append(article)
                                     downloadedUrls.add(articleUrl)
                             else:
-                                logging.error(
-                                    "Article can not be loaded from URL: " +
-                                    articleUrl)
+                                logging.error("Article can not be loaded from URL: " + articleUrl)
                         except SystemExit:
                             raise
                         except:
                             exc_type, exc_value, exc_traceback = sys.exc_info()
                             print("Unexpected error: ", exc_type)
-                            traceback.print_exception(exc_type, exc_value,
-                                                      exc_traceback)
+                            traceback.print_exception(exc_type, exc_value, exc_traceback)
                             sys.exit()
                     else:
                         print('ignore url: ' + articleUrl)
@@ -366,7 +341,7 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s',
     datefmt='%d.%m.%Y %H:%M:%S')
 
-dateTo = datetime.datetime.strptime('03.01.2018', '%d.%m.%Y').date()
+dateTo = datetime.datetime.strptime('31.12.2018', '%d.%m.%Y').date()
 
 # download articles from today until dateTo
 downloader.getNewsPerPage(1, dateTo)

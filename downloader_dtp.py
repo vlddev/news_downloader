@@ -252,5 +252,6 @@ class Downloader(object):
       num += 1
     logging.info("Job completed")
 
-run()
+if __name__ == '__main__':
+  run()
 

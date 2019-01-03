@@ -320,5 +320,5 @@ class Downloader(object):
 article = downloader.loadArticle('http://dt.ua/ECONOMICS/nacionalizaciya-privatbanku-v-fotozhabah-zanepokoyennya-pro-vkladi-chergi-bilya-bankomativ-i-podarunok-do-19-grudnya-227933_.html')
 article.info()
 """
-
-run()
+if __name__ == '__main__':
+  run()

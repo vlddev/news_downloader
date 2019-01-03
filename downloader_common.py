@@ -36,6 +36,7 @@ class BaseArticle(object):
     self.title = ''
     self.author = ''
     self.summary = ''
+    self.source = ''
     self.body = None
 
 
@@ -46,6 +47,7 @@ class BaseArticle(object):
     print('title: '+str(self.title))
     print('author: '+str(self.author))
     print('summary: '+str(self.summary))
+    print('source: '+str(self.source))
     print('body: ' + "\n".join(self.body))
 
   def fb2(self):
@@ -110,7 +112,7 @@ class AbstractDownloader(object):
             with open(outFileName, "w") as fb2_file:
               fb2_file.write(content)
           else:
-            logging.info("No content for site %s for %s" % self.siteName, str(curDate))
+            logging.info("No content for site %s for %s" % (self.siteName, str(curDate)))
         except SystemExit:
           raise
         except BaseException:

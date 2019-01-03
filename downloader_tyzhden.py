@@ -15,7 +15,7 @@ def run():
     logging.basicConfig(filename='downloader_tyzhden.log', level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-    downloader.load(529, 570)
+    downloader.load(568, 581)
 
 
 def test():
@@ -29,6 +29,7 @@ def test():
 
 class Article(downloader_common.BaseArticle):
   def __init__(self, url, j):
+    super.__init__()
     self.url = ''
     if url is not None:
       self.url = url
@@ -96,7 +97,7 @@ class Article(downloader_common.BaseArticle):
 class Downloader(object):
 
   def __init__(self):
-    self.baseUrl = 'http://tyzhden.ua'
+    self.baseUrl = 'https://tyzhden.ua'
     self.getLinksCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="ap2"]//div[@class="bf2 ap6"]//@href\''
     self.getNumDateCmd = downloader_common.XIDEL_CMD + ' --xpath \'//h1[@class="ap1"]//span[@class="bf2 ap1"]\''
     self.numDate = None

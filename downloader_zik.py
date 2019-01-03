@@ -16,10 +16,10 @@ def run():
 
     logging.basicConfig(filename='downloader_zik.log',level=logging.INFO)
 
-    strdate = '20.11.2017'
+    strdate = '21.10.2018'
     date = datetime.datetime.strptime(strdate, '%d.%m.%Y').date()
     #dateTo = datetime.datetime.strptime('17.09.2000', '%d.%m.%Y').date()
-    dateTo = datetime.datetime.strptime('01.01.2018', '%d.%m.%Y').date()
+    dateTo = datetime.datetime.strptime('18.12.2018', '%d.%m.%Y').date()
 
     while (date < dateTo):
       content = downloader.fb2(date)
@@ -90,13 +90,13 @@ class Article(object):
           self.body.append(proLine)
 
   def info(self):
-    print('dtStr: '+self.dtStr);
-    print('timeStr: '+self.timeStr);
-    print('url: '+self.url);
-    print('title: '+str(self.title));
-    print('author: '+str(self.author));
-    print('summary: '+str(self.summary));
-    print('body: ' + "\n".join(self.body));
+    print('dtStr: '+self.dtStr)
+    print('timeStr: '+self.timeStr)
+    print('url: '+self.url)
+    print('title: '+str(self.title))
+    print('author: '+str(self.author))
+    print('summary: '+str(self.summary))
+    print('body: ' + "\n".join(self.body))
 
   def fb2(self):
     ret = '<section><title><p>' + downloader_common.escapeXml(self.title) + '</p></title>'
@@ -165,7 +165,7 @@ class Downloader(object):
             else:
               #exit
               logging.error("Article can not be loaded from URL: "+ articleUrl)
-              sys.exit("Article can not be loaded from URL: "+ articleUrl)
+              #sys.exit("Article can not be loaded from URL: "+ articleUrl)
           except SystemExit:
             raise
           except:
@@ -212,7 +212,8 @@ class Downloader(object):
 
     article = None
     try:
-      article = Article(url, jsonArt)
+      if len(jsonArt) > 0 :
+        article = Article(url, jsonArt)
     except:
       exc_type, exc_value, exc_traceback = sys.exc_info()
       print ("Unexpected error: ", exc_type, "In article ", result)

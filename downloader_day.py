@@ -418,48 +418,7 @@ class Downloader(object):
       exc_type, exc_value, exc_traceback = sys.exc_info()
       print ("Unexpected error: ", exc_type, "In article ", result)
       traceback.print_exception(exc_type, exc_value, exc_traceback)
-    #article.info()
-    #print ("len(article.body) = " + str(len(article.body)))
 
-
-    """
-    if len(article.body) <= 2 : #article has only one row, download as html
-      #xidel http://tyzhden.ua/Columns/50/6881 -q --xpath '//div[@class="bf3 ap1 _ga1_on_" or @class="bf3 ap2 _ga1_on_"]//div'
-      print ("article has <= 2 row(s), reload it")
-      logging.debug("article has<= 2 row(s), download as html")
-      text = " ".join(article.body)
-      text = text.strip()
-      if len(text) > 0: #article is not empty
-        cmd = ('xidel '+url+' -q '
-           ' --xpath \'//div[@class="bf3 ap1 _ga1_on_" or @class="bf3 ap2 _ga1_on_"]//div | //div[@class="bf3 ap1 _ga1_on_" or @class="bf3 ap2 _ga1_on_"]//p\'') #article text
-           #' --output-format=json-wrapped') #output as json
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-        result = p.communicate()[0].decode('utf-8')
-        if len(str(result).strip()) == 0 :
-            cmd = ('xidel '+url+' -q '
-               ' --xpath \'//div[@class="bf3 ap1 _ga1_on_" or @class="bf3 ap2 _ga1_on_"]\'') #article text
-               #' --output-format=json-wrapped') #output as json
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-            result = p.communicate()[0].decode('utf-8')
-        logging.debug("new content len:" + str(len(str(result).strip())))
-        logging.debug("new content:" + str(result))
-        jsonArt[2] = result
-
-        article2 = None
-        try:
-          if len(jsonArt) > 0 :
-            article2 = Article(url, jsonArt)
-          else:
-            logging.warning("Nothing can be load from: "+url)
-            print("Nothing can be load from: "+url)
-        except:
-          exc_type, exc_value, exc_traceback = sys.exc_info()
-          print ("Unexpected error: ", exc_type, "In article ", result)
-          traceback.print_exception(exc_type, exc_value, exc_traceback)
-
-        if article2 is not None and len(article.body) < len(article2.body):
-          return article2
-    """
     return article
 
   def loadArticleTextFromHtml(self, xidelCmd):
@@ -580,7 +539,7 @@ class Downloader(object):
     lastIssueFolder = downloader_common.rootPath+'/day'
     if os.path.isdir(curYearFolder): #folder for current year exists
         lastIssueFolder = curYearFolder
-    elif os.path.isdir(curYearFolder): #folder for previous year exists:
+    elif os.path.isdir(prevYearFolder): #folder for previous year exists:
         lastIssueFolder = prevYearFolder
     else:
         return 0

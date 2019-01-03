@@ -33,7 +33,7 @@ def run():
     while (num <= currentIssueNum):
       content = downloader.fb2(num)
       if len(content) > 0:
-        with open(downloader_common.rootPath+'/dt_gazeta/2017/dt_gazeta_'+str(num)+'.fb2', "w") as fb2_file:
+        with open(downloader_common.rootPath+'/dt_gazeta/2018/dt_gazeta_'+str(num)+'.fb2', "w") as fb2_file:
           fb2_file.write(content)
       num += 1
 
@@ -145,7 +145,7 @@ class Downloader(object):
     # replace {0} with url
     articleList = list()
     cmd = self.getLinksCmd.format(url)
-    print('cmd: ' +cmd)
+    # print('cmd: ' +cmd)
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for ln in p.stdout:
       line = ln.decode('utf-8').strip()
@@ -247,7 +247,7 @@ class Downloader(object):
     lastIssueFolder = downloader_common.rootPath+'/dt_gazeta'
     if os.path.isdir(curYearFolder): #folder for current year exists
         lastIssueFolder = curYearFolder
-    elif os.path.isdir(curYearFolder): #folder for previous year exists:
+    elif os.path.isdir(prevYearFolder): #folder for previous year exists:
         lastIssueFolder = prevYearFolder
     else:
         return 1

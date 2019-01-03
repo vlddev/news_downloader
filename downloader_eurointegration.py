@@ -17,7 +17,7 @@ def run():
     logging.basicConfig(filename='downloader_eurointegration.log', level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-    downloader.loadThreaded('03.04.2018', '01.09.2018')
+    downloader.loadThreaded('01.09.2018', '18.12.2018')
 
 
 def test():
@@ -114,7 +114,7 @@ class Article(object):
 
 class Downloader(downloader_common.AbstractDownloader):
 
-  def __init__(self):
+  def __init__(self, rootPath=''):
     self.baseUrl = 'https://www.eurointegration.com.ua'
     self.getLinksCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="block_archive_list"]//div[@class="article__title"]//a/@href\''
     super().__init__('eurointegration')
