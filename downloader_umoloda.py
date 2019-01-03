@@ -11,28 +11,38 @@ import downloader_common
 
 
 def run():
+  downloader = Downloader()
+
+  logging.basicConfig(filename='downloader_um.log', level=logging.INFO,
+          format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+  downloader.load()
+"""
+  # get last downloaded number
+  num = downloader.getLastDownloadedIssueNr() + 1
+
+  # get current issue number (https://dt.ua/gazeta/issue/1129)
+  currentIssueNum = downloader.getCurrentIssueNr()
+  print ("download issues from {0} to {1}".format(num, currentIssueNum))
+  logging.info("download issues from {0} to {1}".format(num, currentIssueNum))
+
+  while (num <= currentIssueNum):
+      content = downloader.fb2(num)
+      if len(content) > 0:
+          with open(downloader_common.rootPath+'/umoloda/'+str(downloader.numDate.year)+'/umoloda_'+str(num)+'.fb2', "w") as fb2_file:
+              fb2_file.write(content)
+      num += 1
+"""
+
+def test():
     downloader = Downloader()
 
-    logging.basicConfig(filename='downloader_um.log', level=logging.INFO,
-            format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+    logging.basicConfig(filename='downloader_um.log', level=logging.DEBUG,
+        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-    # get last downloaded number
-    num = downloader.getLastDownloadedIssueNr() + 1
+    article = downloader.loadArticle('http://www.telekritika.ua/verhovna-rada/2002-01-17/5098')
+    print(article.info())
 
-    # get current issue number (https://dt.ua/gazeta/issue/1129)
-    currentIssueNum = downloader.getCurrentIssueNr()
-    print ("download issues from {0} to {1}".format(num, currentIssueNum))
-    logging.info("download issues from {0} to {1}".format(num, currentIssueNum))
-
-    while (num <= currentIssueNum):
-        content = downloader.fb2(num)
-        if len(content) > 0:
-            with open(downloader_common.rootPath+'/umoloda/'+str(downloader.numDate.year)+'/umoloda_'+str(num)+'.fb2', "w") as fb2_file:
-                fb2_file.write(content)
-        num += 1
-
-
-class Article(object):
+class Article(downloader_common.BaseArticle):
   def __init__(self, url, j):
     self.url = ''
     if url is not None:
@@ -82,15 +92,7 @@ class Article(object):
         if len(proLine) > 0:
           self.body.append(proLine)
 
-  def info(self):
-    print('dtStr: '+self.dtStr);
-    print('timeStr: '+self.timeStr);
-    print('url: '+self.url);
-    print('title: '+str(self.title));
-    print('author: '+str(self.author));
-    print('summary: '+str(self.summary));
-    print('body: ' + "\n".join(self.body));
-
+"""
   def fb2(self):
     ret = '<section><title><p>' + downloader_common.escapeXml(self.title) + '</p></title>'
     if len(self.author) > 0:
@@ -101,6 +103,7 @@ class Article(object):
       ret += '\n <p>' + downloader_common.escapeXml(line) + '</p>'
     ret += '\n</section>'
     return ret
+"""
 
 class Downloader(object):
 
@@ -284,19 +287,19 @@ class Downloader(object):
     curYearFolder = downloader_common.rootPath+'/umoloda/'+str(now.year)
     prevYearFolder = downloader_common.rootPath+'/umoloda/'+str(now.year-1)
     lastIssueFolder = downloader_common.rootPath+'/umoloda'
-    if os.path.isdir(curYearFolder): # folder for current year exists
-        lastIssueFolder = curYearFolder
-    elif os.path.isdir(prevYearFolder): # folder for previous year exists:
-        lastIssueFolder = prevYearFolder
+    if os.path.isdir(curYearFolder) and len(os.listdir(curYearFolder)) > 0: # folder for current year exists
+      lastIssueFolder = curYearFolder
+    elif os.path.isdir(prevYearFolder) and len(os.listdir(prevYearFolder)) > 0: # folder for previous year exists:
+      lastIssueFolder = prevYearFolder
     else:
-        return 1
+      return 0
 
-    lastIssueNr = 1
+    lastIssueNr = 0
     for issueFile in os.listdir(lastIssueFolder):
-        if issueFile.endswith(".fb2"):
-            curIssueNr = int(''.join(ele for ele in issueFile[:-3] if ele.isdigit()))
-            if curIssueNr > lastIssueNr:
-                lastIssueNr = curIssueNr
+      if issueFile.endswith(".fb2"):
+        curIssueNr = int(''.join(ele for ele in issueFile[:-3] if ele.isdigit()))
+        if curIssueNr > lastIssueNr:
+          lastIssueNr = curIssueNr
 
     return lastIssueNr
 
@@ -330,20 +333,6 @@ class Downloader(object):
       num += 1
     logging.info("Job completed")
 
-
-"""
-#downloader.getNewsForDate('21.01.2011')
-article = downloader.loadArticle('http://www.telekritika.ua/verhovna-rada/2002-01-17/5098')
-print(article.info())
-
-textStats = stats.TextStats(" ".join(article.body))
-print(textStats.common_text_20)
-if textStats.isUkr():
-  print("this is Ukrainian text")
-if textStats.isRus():
-  print("this is Rusian text")
-
-"""
 
 if __name__ == '__main__':
     run()
