@@ -1,5 +1,6 @@
 import sys
 import traceback
+import requests
 import datetime
 import subprocess
 import json
@@ -12,8 +13,17 @@ import downloader_common
 # TODO reload files with "404 Not Found" (2006/up_news_2006-03-29.fb2 ...)
 
 def run():
+    downloader = Downloader()
+
+    logging.basicConfig(filename='downloader_up_news.log', level=logging.INFO,
+        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    downloader.loadThreaded('02.09.2018', '01.01.2019')
+    #downloader.loadThreaded('01.09.2018', '02.09.2018')
+
+def run_old():
     rootPath = downloader_common.rootPath
-    downloader = Downloader(rootPath)
+    downloader = Downloader()
     logging.basicConfig(filename='downloader_up_news.log',level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
@@ -21,7 +31,7 @@ def run():
 
 def test():
     rootPath = downloader_common.rootPath
-    downloader = Downloader(rootPath)
+    downloader = Downloader()
 
     logging.basicConfig(filename='downloader_up_news.log',level=logging.DEBUG,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
@@ -108,20 +118,25 @@ class Article(object):
     ret += '\n</section>'
     return ret
 
-class Downloader(object):
+class Downloader(downloader_common.AbstractDownloader):
 
-  def __init__(self, rootPath):
-    self.baseUrl = 'http://www.pravda.com.ua'
-    self.getLinksCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="block block_news_all"]//a/@href\' '
-    self.rootPath = rootPath #'/home/vlad/Dokumente/python/news_lib'
+  def __init__(self):
+    self.baseUrl = 'https://www.pravda.com.ua'
+    # xidel have problems to download content from pravda.com.ua.
+    # use wget for downloading and pipe content to xidel
+    self.wgetPipeCmd = 'wget -O - -o /dev/null "{0}" | xidel - -s '
+    self.getLinksCmd = self.wgetPipeCmd + ' --xpath \'//div[@class="block block_news_all"]//div[@class="news news_all"]//a/@href\' '
+    #self.rootPath = rootPath #'/home/vlad/Dokumente/python/news_lib'
+    super().__init__('up_news')
 
   def getNewsForDate(self, date):
     print('get news for ' + date.strftime('%d.%m.%Y'))
     url = self.baseUrl + '/archives/date_'+date.strftime('%d%m%Y')+'/'
     print('url: ' +url)
-    # replace {0} with url
+
     articleList = list()
     downloadedUrls = set()
+    # replace {0} with url
     cmd = self.getLinksCmd.format(url)
     #print('cmd: ' +cmd)
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
@@ -213,7 +228,7 @@ class Downloader(object):
     return sorted(articleList, key=lambda x: x.timeStr)
 
   def loadArticle(self, url):
-    cmd = (downloader_common.XIDEL_CMD.format(url) +
+    cmd = (self.wgetPipeCmd.format(url) +
            ' --xpath \'//div[@class="post post_news"]//div[@class="post_news__date"]\'' #date
            ' --xpath \'//div[@class="post post_news"]//h1[@class="post_news__title"]\'' #title
            ' --xpath \'//div[@class="post post_news"]//div[@class="post_news__text dummy"]\'' #empty text
@@ -228,7 +243,7 @@ class Downloader(object):
     if len(jsonArt) == 0:
       return None
 
-    aTextCmd = (downloader_common.XIDEL_CMD.format(url) +
+    aTextCmd = (self.wgetPipeCmd.format(url) +
        ' --xpath \'//div[@class="post post_news"]//div[@class="post_news__text"]\'' #article text
        ' --output-format=html' #output as html
        ' --output-encoding=windows-1251')  #pravda.com.ua uses encoding=windows-1251
@@ -251,7 +266,7 @@ class Downloader(object):
         logging.debug("loadJsonArticle1")
         jsonArt = self.loadJsonArticle1(url)
         if jsonArt[2] is not None and len(jsonArt[2].strip()) > 0: #article is not empty
-          aTextCmd = (downloader_common.XIDEL_CMD.format(url) +
+          aTextCmd = (self.wgetPipeCmd.format(url) +
              ' --xpath \'//div[@class="post post_news post_article"]//div[@class="post_news__text"]\'' #article text
              ' --output-format=html' #output as html
              ' --output-encoding=windows-1251')  #pravda.com.ua uses encoding=windows-1251
@@ -260,7 +275,7 @@ class Downloader(object):
           logging.debug("loadJsonArticle2")
           jsonArt = self.loadJsonArticle2(url)
           if jsonArt[2] is not None and len(jsonArt[2].strip()) > 0: #article is not empty
-            aTextCmd = (downloader_common.XIDEL_CMD.format(url) +
+            aTextCmd = (self.wgetPipeCmd.format(url) +
                ' --xpath \'//div[@class="post post_news post_column"]//div[@class="post_news__text"]\'' #article text
                ' --output-format=html' #output as html
                ' --output-encoding=windows-1251')  #pravda.com.ua uses encoding=windows-1251
@@ -369,6 +384,7 @@ class Downloader(object):
     ret += '\n</FictionBook>'
     return ret
 
+"""
   def load(self, sDateFrom, sDateTo):
     date = datetime.datetime.strptime(sDateFrom, '%d.%m.%Y').date()
     dateTo = datetime.datetime.strptime(sDateTo, '%d.%m.%Y').date()
@@ -380,7 +396,8 @@ class Downloader(object):
           fb2_file.write(content)
       date += datetime.timedelta(days=1)
     logging.info("Job completed")
+"""
 
-
-run()
+if __name__ == '__main__':
+  run()
 
