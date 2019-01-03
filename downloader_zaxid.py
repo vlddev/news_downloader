@@ -8,16 +8,24 @@ import stats
 import downloader_common
 
 def run():
+    downloader = Downloader()
+
+    logging.basicConfig(filename='downloader_zaxid.log', level=logging.INFO,
+        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    downloader.loadThreaded('18.12.2018', '01.01.2019')
+
+
+def run_old():
     rootPath = '/home/vlad/Dokumente/python/news_lib'
-    downloader = Downloader(rootPath)
+    downloader = Downloader()
     #logging.basicConfig(filename='downloader_debug.log',level=logging.DEBUG)
 
     logging.basicConfig(filename='downloader_zaxid.log',level=logging.INFO)
 
-    strdate = '01.01.2017'
+    strdate = '14.11.2018'
     date = datetime.datetime.strptime(strdate, '%d.%m.%Y').date()
-    #dateTo = datetime.datetime.strptime('17.09.2000', '%d.%m.%Y').date()
-    dateTo = datetime.datetime.strptime('03.01.2017', '%d.%m.%Y').date()
+    dateTo = datetime.datetime.strptime('18.12.2018', '%d.%m.%Y').date()
 
     while (date < dateTo):
       content = downloader.fb2(date)
@@ -76,13 +84,13 @@ class Article(object):
             self.author = self.author[:len(self.author)-1]
 
   def info(self):
-    print('dtStr: '+self.dtStr);
-    print('timeStr: '+self.timeStr);
-    print('url: '+self.url);
-    print('title: '+str(self.title));
-    print('author: '+str(self.author));
-    print('summary: '+str(self.summary));
-    print('body: ' + "\n".join(self.body));
+    print('dtStr: '+self.dtStr)
+    print('timeStr: '+self.timeStr)
+    print('url: '+self.url)
+    print('title: '+str(self.title))
+    print('author: '+str(self.author))
+    print('summary: '+str(self.summary))
+    print('body: ' + "\n".join(self.body))
 
   def fb2(self):
     ret = '<section><title><p>' + downloader_common.escapeXml(self.title) + '</p></title>'
@@ -97,15 +105,16 @@ class Article(object):
     ret += '\n</section>'
     return ret
 
-class Downloader(object):
+class Downloader(downloader_common.AbstractDownloader):
 
-  def __init__(self, rootPath):
+  def __init__(self, rootPath=''):
     self.baseUrl = 'http://zaxid.net'
     self.getLinksCmd = (downloader_common.XIDEL_CMD + ' --xpath \'//ul[@class="list search_list"]//div[@class="title"]//@href\' '  #href
             ' --xpath \'//ul[@class="list search_list"]//span[@class="time"]\' ' #time
             ' --output-format=json-wrapped') #output as json
     self.getNextPageCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="b_center_pager"]//li[@class="arrow"]//@href\''
-    self.rootPath = rootPath #'/home/vlad/Dokumente/python/news_lib'
+    #self.rootPath = rootPath #'/home/vlad/Dokumente/python/news_lib'
+    super().__init__('zaxid')
 
     #xidel "http://zaxid.net/search/search.do?searchValue=%D0%B0&dateOrder=true&from=2008-05-01&to=2008-05-01&startRow=30" --xpath '//div[@class="advanced_search"]//@href' --xpath \'//div[@class="advanced_search"]//span[@class="time"]'
     #xidel "http://zaxid.net/search/search.do?searchValue=%D0%B0&dateOrder=true&from=2008-05-01&to=2008-05-01" --xpath '//div[@class="b_pager"]//li[@class="arrow"]//@href'
@@ -282,6 +291,7 @@ class Downloader(object):
     ret += '\n</FictionBook>'
     return ret
 
+"""
   def load(self, sDateFrom, sDateTo):
     logging.basicConfig(filename='downloader_zaxid.log',level=logging.INFO)
     date = datetime.datetime.strptime(sDateFrom, '%d.%m.%Y').date()
@@ -294,6 +304,7 @@ class Downloader(object):
           fb2_file.write(content)
       date += datetime.timedelta(days=1)
     logging.info("Job completed")
+"""
 
 """
 downloader = Downloader()
@@ -330,3 +341,6 @@ logging.basicConfig(filename='downloader_zaxid_debug.log',level=logging.DEBUG)
 article = downloader.loadArticle('http://zaxid.net/news/showNews.do?sutinki_lvova&objectId=1037437')
 print(article.info())
 """
+
+if __name__ == '__main__':
+    run()

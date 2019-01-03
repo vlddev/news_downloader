@@ -9,10 +9,18 @@ import concurrent.futures
 from bs4 import BeautifulSoup
 import downloader_common
 
-
 def run():
+    downloader = Downloader()
+
+    logging.basicConfig(filename='downloader_unian.log', level=logging.INFO,
+        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    downloader.loadThreaded('18.12.2018', '01.01.2019')
+
+
+def run_old():
     rootPath = downloader_common.rootPath
-    downloader = Downloader(rootPath)
+    downloader = Downloader()
     logging.basicConfig(filename='downloader_unian.log', level=logging.INFO)
 
     strdate = '01.04.2018'
@@ -30,7 +38,7 @@ def run():
 
 def test():
     rootPath = downloader_common.rootPath
-    downloader = Downloader(rootPath)
+    downloader = Downloader()
 
     logging.basicConfig(filename='downloader_unian.log',level=logging.DEBUG,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
@@ -41,7 +49,7 @@ def test():
 
 def runUrl():
     rootPath = '/home/vlad/Dokumente/python/news_lib'
-    downloader = Downloader(rootPath)
+    downloader = Downloader()
     article = downloader.loadArticle('https://sport.unian.ua/hockey/2137881-kremenchuk-zakinuv-vovkam-7-shayb-i-rozgromiv-brovarsku-komandu.html')
     print(article.info())
 
@@ -119,12 +127,13 @@ class Article(object):
         return ret
 
 
-class Downloader(object):
-    def __init__(self, rootPath):
+class Downloader(downloader_common.AbstractDownloader):
+    def __init__(self, rootPath=''):
         self.baseUrl = 'https://www.unian.ua'
         self.getLinksCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="publications-archive"]//div[@class="gallery-item news-inline-item"]//a[@class="publication-title"]/@href\''
         # http://www.unian.ua/news/archive/20060319
-        self.rootPath = rootPath  # '/home/vlad/Dokumente/python/news_lib'
+        # self.rootPath = rootPath  # '/home/vlad/Dokumente/python/news_lib'
+        super().__init__('unian')
 
     def getUrlsForDate(self, date):
         url = self.baseUrl + '/news/archive/' + date.strftime('%Y%m%d')
@@ -390,7 +399,7 @@ class Downloader(object):
         # strdate = '%d.%d.%d' % (date.day, date.month, date.year)
         today = datetime.date.today()
         url = self.baseUrl + '/news/archive/' + date.strftime('%Y%m%d')
-        articleList = self.getNewsForDateThreaded(date)
+        articleList = self.getNewsForDate(date)
         if len(articleList) < 1:
             return ''
         ret = '<?xml version="1.0" encoding="utf-8"?>'
@@ -421,6 +430,7 @@ class Downloader(object):
         ret += '\n</FictionBook>'
         return ret
 
+"""
     def load(self, sDateFrom, sDateTo):
         logging.basicConfig(
             filename='downloader_unian.log', level=logging.INFO)
@@ -435,7 +445,7 @@ class Downloader(object):
                     fb2_file.write(content)
             date += datetime.timedelta(days=1)
         logging.info("Job completed")
-
+"""
 
 """
 strdate = '12.04.2012'

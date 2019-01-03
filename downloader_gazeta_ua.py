@@ -11,16 +11,34 @@ import downloader_common
 from bs4 import BeautifulSoup
 
 def run():
+    downloader = Downloader()
+
+    logging.basicConfig(filename='downloader_gazeta_ua.log', level=logging.INFO,
+        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    downloader.loadThreaded('08.02.2017', '09.02.2017')
+
+def test():
+    # rootPath = downloader_common.rootPath
+    downloader = Downloader()
+
+    logging.basicConfig(filename='downloader_gazeta_ua.log',level=logging.DEBUG,
+        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    article = downloader.loadArticle('https://gazeta.ua/articles/settlers/_vid-shahtarya-do-dida-morozaalpinista-pereselenec-vidkriv-kreativnij-biznes/811542')
+    print(article.info())
+
+def run_old():
     rootPath = downloader_common.rootPath
     downloader = Downloader(rootPath)
     #logging.basicConfig(filename='downloader_debug.log',level=logging.DEBUG)
 
     logging.basicConfig(filename='downloader_gazeta_ua.log',level=logging.INFO)
 
-    strdate = '01.01.2017'
+    strdate = '01.01.2018'
     date = datetime.datetime.strptime(strdate, '%d.%m.%Y').date()
     #dateTo = datetime.datetime.strptime('17.09.2000', '%d.%m.%Y').date()
-    dateTo = datetime.datetime.strptime('03.01.2017', '%d.%m.%Y').date()
+    dateTo = datetime.datetime.strptime('02.01.2018', '%d.%m.%Y').date()
 
     while (date < dateTo):
       content = downloader.fb2(date)
@@ -28,6 +46,7 @@ def run():
         with open(rootPath+'/gazeta_ua/'+str(date.year)+'/gazeta_ua_'+str(date)+'.fb2', "w") as fb2_file:
           fb2_file.write(content)
       date += datetime.timedelta(days=1)
+
 
 class Article(object):
   def __init__(self, url, j):
@@ -66,7 +85,7 @@ class Article(object):
       #remove empty lines
       for line in text.split('\n'):
         proLine = line.strip()
-        if len(proLine) > 0:
+        if len(proLine) > 0 and 'ЧИТАЙТЕ ТАКОЖ:' not in proLine:
           self.body.append(proLine)
 
   def info(self):
@@ -78,7 +97,7 @@ class Article(object):
 
   def fb2(self):
     ret = '<section><title><p>' + downloader_common.escapeXml(self.title) + '</p></title>'
-    ret += '\n <p>' + self.dtStr + '</p>'
+    ret += '\n <p>' + self.timeStr + '</p>'
     #if len(self.summary) > 0:
     #  ret += '\n <p><strong>' + downloader_common.escapeXml(self.summary) + '</strong></p>'
     ret += '\n <empty-line/>'
@@ -87,12 +106,13 @@ class Article(object):
     ret += '\n</section>'
     return ret
 
-class Downloader(object):
+class Downloader(downloader_common.AbstractDownloader):
 
-  def __init__(self, rootPath):
+  def __init__(self, rootPath=''):
     self.baseUrl = 'https://gazeta.ua'
     self.getLinksCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div//a/@href\''
     self.rootPath = rootPath #'/home/vlad/Dokumente/python/news_lib'
+    super().__init__('gazeta_ua')
 
   def getNewsForDate(self, date):
     print('get news for ' + date.strftime('%d.%m.%Y'))
@@ -171,7 +191,7 @@ class Downloader(object):
     cmd = (downloader_common.XIDEL_CMD.format(url) +
            ' --xpath \'//div[@class="w double article"]//div[@class="clearfix"]//div[@class="pull-right news-date"]/span\'' #date in first line (hh:mm) and time in second line
            ' --xpath \'//div[@class="w double article"]//article//h1\'' #title
-           ' --xpath \'//section[@class="article-content clearfix"]//article\'' #article body
+           ' --xpath \'//section[@class="article-content clearfix"]//article/*[self::p]\'' #article body
            ' --output-format=json-wrapped') #output as json
 
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
@@ -195,7 +215,7 @@ class Downloader(object):
           text = text.strip()
           if len(text) > 0: #article is not empty
             cmd = (downloader_common.XIDEL_CMD.format(url) +
-               ' --xpath \'//section[@class="article-content clearfix"]//article\'' #article text
+               ' --xpath \'//section[@class="article-content clearfix"]//article/*[self::p]\'' #article text
                ' --output-format=html') #output as html
             jsonArt[2] = self.loadArticleTextFromHtml(cmd)
 
@@ -248,7 +268,7 @@ class Downloader(object):
     ret += '\n <title-info>'
     ret += '\n  <genre>nonfiction</genre>'
     ret += '\n  <author><last-name>Gazeta.ua</last-name></author>'
-    ret += '\n  <book-title>Gazeta.ua. Новини' + date.strftime('%d.%m.%Y') + '</book-title>'
+    ret += '\n  <book-title>Gazeta.ua. Новини ' + date.strftime('%d.%m.%Y') + '</book-title>'
     ret += '\n  <date>' + str(date) + '</date>'
     ret += '\n  <lang>uk</lang>'
     ret += '\n </title-info>'
@@ -270,6 +290,7 @@ class Downloader(object):
     ret += '\n</FictionBook>'
     return ret
 
+"""
   def load(self, sDateFrom, sDateTo):
     logging.basicConfig(filename='downloader_gazeta_ua.log',level=logging.INFO)
     date = datetime.datetime.strptime(sDateFrom, '%d.%m.%Y').date()
@@ -282,11 +303,7 @@ class Downloader(object):
           fb2_file.write(content)
       date += datetime.timedelta(days=1)
     logging.info("Job completed")
-
-
 """
-#downloader.getNewsForNumber(1)
-article = downloader.loadArticle('http://gazeta.ua/articles/comments-newspaper/_soyuznik-moskvi-perejde-na-storonu-kiyeva/100056')
-#logging.basicConfig(filename='downloader_gaz_po_ukr_debug.log',level=logging.DEBUG)
-print(article.info())
-"""
+
+if __name__ == '__main__':
+    run()

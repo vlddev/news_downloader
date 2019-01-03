@@ -6,6 +6,8 @@ import datetime
 import subprocess
 import logging
 import json
+import uuid
+import concurrent.futures
 from bs4 import BeautifulSoup
 import const_journ_kr
 import downloader_common
@@ -34,19 +36,20 @@ class Article(object):
         self.title = j[1][0]
 
     self.body = list()
-    if j[2] is not None:
+    val = j[2]
+    if val is not None:
       locText = ''
-      if isinstance(j[2], str):
-        locText = j[2]
-      elif isinstance(j[2], list):
-        locText = j[2][0]
+      if isinstance(val, str):
+        locText = val
+      elif isinstance(val, list):
+        locText = '\n'.join(val)
 
       text = locText.strip() # trim
 
       #remove empty lines
       for line in text.split('\n'):
-        proLine = line.strip()
-        if len(proLine) > 0:
+        proLine = downloader_common.relpaceHtmlEntities(line.strip())
+        if len(proLine) > 0 and 'ЧИТАЙТЕ ТАКОЖ:' not in proLine:
           self.body.append(proLine)
 
   def info(self):
@@ -59,8 +62,6 @@ class Article(object):
   def fb2(self):
     ret = '<section><title><p>' + downloader_common.escapeXml(self.title) + '</p></title>'
     ret += '\n <p>' + self.dtStr + '</p>'
-    #if len(self.summary) > 0:
-    #  ret += '\n <p><strong>' + downloader_common.escapeXml(self.summary) + '</strong></p>'
     ret += '\n <empty-line/>'
     for line in self.body:
       ret += '\n <p>' + downloader_common.escapeXml(line) + '</p>'
@@ -73,8 +74,8 @@ class Downloader(object):
     self.baseUrl = 'http://gazeta.ua'
     self.getLinksCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div//a/@href\''
     self.const = const_journ_kr.JournKrConst()
-
-    #http://www.unian.ua/news/archive/20060319
+    self.siteName = 'j_krajina'
+    self.maxDownloadThreads = 20
 
   def getNewsForNumber(self, num):
     print("get news for №" + str(num))
@@ -91,11 +92,12 @@ class Downloader(object):
     if len(strJson) < 10:
       return articleList
     data = json.loads(strJson)
-    with open("gua.html", "w") as text_file:
+    tmpFile = "gpua"+str(uuid.uuid4())+".html"
+    with open(tmpFile, "w") as text_file:
         text_file.write(data['html'])
 
     # replace {0} with url
-    cmd = self.getLinksCmd.format("gua.html")
+    cmd = self.getLinksCmd.format(tmpFile)
     #print('cmd: ' +cmd)
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for ln in p.stdout:
@@ -104,7 +106,7 @@ class Downloader(object):
       if len(line) > 0 and '#comments' not in line and articleUrl not in urlList:
         urlList.append(articleUrl)
 
-    os.remove("gua.html")
+    os.remove(tmpFile)
 
     for articleUrl in reversed(urlList):
       if articleUrl not in downloadedUrls:
@@ -149,7 +151,7 @@ class Downloader(object):
     cmd = (downloader_common.XIDEL_CMD.format(url) +
            ' --xpath \'//div[@class="w double article"]//div[@class="clearfix"]//div[@class="pull-right news-date"]/span\'' #date in first line (hh:mm) and time in second line
            ' --xpath \'//div[@class="w double article"]//article//h1\'' #title
-           ' --xpath \'//section[@class="article-content clearfix"]//article\'' #article body
+           ' --xpath \'//section[@class="article-content clearfix"]//article/*[self::p]\'' #article body
            ' --output-format=json-wrapped') #output as json
 
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
@@ -250,13 +252,79 @@ class Downloader(object):
     ret += '\n</FictionBook>'
     return ret
 
+  def getFileNameForNumber(self, num):
+    return '%s/%s/%s/%s_%s.fb2' % (downloader_common.rootPath, self.siteName, str(self.numDate.year), self.siteName, str(num))
 
+  def load(self, numFrom, numTo):
+    num = numFrom
+    while (num < numTo):
+      content = self.fb2(num)
+      if len(content) > 0:
+        outFileName = self.getFileNameForNumber(num)
+        with open(outFileName, "w") as fb2_file:
+          fb2_file.write(content)
+      num += 1
+
+  def loadThreaded(self, numFrom, numTo):
+    logging.info("Job started for site %s" % self.siteName)
+
+    numList = []
+    num = numFrom
+    while (num < numTo):
+      numList.append(num)
+      num += 1
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=self.maxDownloadThreads) as executor:
+      futureContents = {executor.submit(self.fb2, curNum): curNum for curNum in numList}
+      for future in concurrent.futures.as_completed(futureContents):
+        curNum = futureContents[future]
+        try:
+          content = future.result()
+          if len(content) > 0:
+            outFileName = self.getFileNameForNumber(curNum)
+            print("Write to file: " + outFileName)
+            with open(outFileName, "w") as fb2_file:
+              fb2_file.write(content)
+          else:
+            logging.info("No content for site %s for %s" % (self.siteName, str(curNum)))
+        except SystemExit:
+          raise
+        except BaseException:
+          exc_type, exc_value, exc_traceback = sys.exc_info()
+          print("Unexpected error: ", exc_type)
+          traceback.print_exception(exc_type, exc_value, exc_traceback)
+
+    logging.info("Job completed for site %s" % self.siteName)
+
+def run():
+  downloader = Downloader()
+
+  logging.basicConfig(filename='downloader_journal_krajina.log',level=logging.INFO,
+          format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+  downloader.loadThreaded(210, 262)
+  #downloader.load(363, 364)
+
+def test():
+  downloader = Downloader()
+
+  logging.basicConfig(filename='downloader_journal_krajina.log',level=logging.INFO,
+          format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+  #downloader.getNewsForNumber(1)
+  article = downloader.loadArticle('http://gazeta.ua/articles/comments-newspaper/_soyuznik-moskvi-perejde-na-storonu-kiyeva/100056')
+  #logging.basicConfig(filename='downloader_gaz_po_ukr_debug.log',level=logging.DEBUG)
+  print(article.info())
+
+if __name__ == '__main__':
+    run()
+
+"""
 downloader = Downloader()
 
 logging.basicConfig(filename='downloader_journal_krajina.log',level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-num =387 #2016 -
+num =363 #2016 -
 
 while (num < 404): #343
   content = downloader.fb2(num)
@@ -264,9 +332,4 @@ while (num < 404): #343
     with open(downloader_common.rootPath+'/j_krajina/'+str(downloader.numDate.year)+'/j_krajina_'+str(num)+'.fb2', "w") as fb2_file:
       fb2_file.write(content)
   num += 1
-"""
-#downloader.getNewsForNumber(1)
-article = downloader.loadArticle('http://gazeta.ua/articles/comments-newspaper/_soyuznik-moskvi-perejde-na-storonu-kiyeva/100056')
-#logging.basicConfig(filename='downloader_gaz_po_ukr_debug.log',level=logging.DEBUG)
-print(article.info())
 """

@@ -7,6 +7,27 @@ import re
 from bs4 import BeautifulSoup
 import downloader_common
 
+def run():
+    downloader = Downloader()
+
+    logging.basicConfig(filename='downloader_zbruc.log', level=logging.INFO,
+        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+    
+    #downloader.loadThreaded('01.09.1893', '31.12.1893')
+    #downloader.loadThreaded('01.09.1918', '01.12.1918')
+    #downloader.loadThreaded('01.09.1943', '31.12.1943')
+    downloader.loadThreaded('01.03.2013', '01.01.2019')
+
+
+def test():
+    downloader = Downloader()
+
+    logging.basicConfig(filename='downloader_zbruc.log', level=logging.DEBUG,
+        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    article = downloader.loadArticle('https://zbruc.eu/node/78310')
+    print(article.info())
+
 def escapeXml(val):
   if val is not None and isinstance(val, str):
     txt = val.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('\a', '')
@@ -15,8 +36,9 @@ def escapeXml(val):
   else:
     return val
 
-class Article(object):
+class Article(downloader_common.BaseArticle):
   def __init__(self, url, j):
+    super().__init__()
     self.url = ''
     if url is not None:
       self.url = url
@@ -74,15 +96,6 @@ class Article(object):
       elif isinstance(val, list):
         self.coltype = val[0].strip()
 
-  def info(self):
-    print('dtStr: '+self.dtStr);
-    print('timeStr: '+self.timeStr);
-    print('url: '+self.url);
-    print('title: '+str(self.title));
-    print('author: '+str(self.author));
-    print('source: '+str(self.source));
-    print('body: ' + "\n".join(self.body));
-
   def fb2(self):
     ret = '<section><title><p>' + escapeXml(self.title) + '</p></title>'
     if len(self.source) > 0:
@@ -94,14 +107,14 @@ class Article(object):
     ret += '\n</section>'
     return ret
 
-class Downloader(object):
+class Downloader(downloader_common.AbstractDownloader):
 
-  def __init__(self, rootPath):
-    self.baseUrl = 'http://zbruc.eu'
-    self.getLinksCmd = downloader_common.XIDEL_CMD + 'xidel "{0}" --xpath \'//ol[@class="search-results node-results"]//li[@class="search-result"]//div[@class="title"]//@href\''
-    self.getNextPageCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="item-list"]//li[@class="pager-next"]//@href\''
+  def __init__(self):
+    self.baseUrl = 'https://zbruc.eu'
+    self.getLinksCmd = downloader_common.XIDEL_CMD + 'xidel "{0}" --xpath \'//ol[@class="search-results node-results"]//li[@class="search-result"]//h3[@class="title"]//@href\''
+    self.getNextPageCmd = downloader_common.XIDEL_CMD + ' --xpath \'//ul[@class="pagination"]//li[@class="next"]//@href\''
     self.downloadedUrls = set()
-    self.rootPath = rootPath #'/home/vlad/Dokumente/python/news_lib'
+    super().__init__('zbruc')
 
     #xidel "http://zbruc.eu/search/node/04.06.1913" --xpath '//div[@class="archive_list"]//@href'
 
@@ -184,10 +197,10 @@ class Downloader(object):
     #xidel "http://zbruc.eu/node/1332" -q --xpath '//div[@id="main_content"]//div[@class="field field-name-field-depeshi field-type-text-long field-label-hidden"]'
 
     cmd = (downloader_common.XIDEL_CMD.format(url) +
-           ' --xpath \'//div[@id="main_content"]//span[@class="date-display-single"]\'' #date
-           ' --xpath \'//div[@id="main_content"]//div[@id="page-title"]\'' #title
+           ' --xpath \'//div[@class="column_single"]//div[@class="text"]//span[@class="date-display-single"]\'' #date
+           ' --xpath \'//div[@class="column_single"]//div[@class="title"]/h1\'' #title
            ' --xpath \'//div[@id="main_content"]//div[@class="field field-name-field-source-link field-type-link-field field-label-hidden"]\'' #source
-           ' --xpath \'//div[@id="main_content"]//div[@class="field field-name-field-depeshi field-type-text-long field-label-hidden"]\'' #article text
+           ' --xpath \'//div[@class="column_single"]//div[@class="dummy_text"]\'' #article text
            ' --xpath \'//div[@id="main_content"]//div[@class="field field-name-field-redakciia-istoria field-type-taxonomy-term-reference field-label-hidden"]\'' #coltype
            ' --output-format=json-wrapped') #output as json
     #print('cmd: '+cmd)
@@ -198,8 +211,7 @@ class Downloader(object):
 
     # load article text as html
     htmlCmd = (downloader_common.XIDEL_CMD.format(url) +
-       ' --xpath \'//div[@id="main_content"]//div[@class="field field-name-field-depeshi field-type-text-long field-label-hidden" or '
-       '           @class="field field-name-body field-type-text-with-summary field-label-hidden"]\'' #article text
+       ' --xpath \'//div[@class="column_single"]//div[@class="text"]\'' #article text
        ' --output-format=html') #output as html
     jsonArt[3] = self.loadArticleTextFromHtml(htmlCmd)
 
@@ -269,67 +281,5 @@ class Downloader(object):
     ret += '\n</FictionBook>'
     return ret
 
-  def load(self, sDateFrom, sDateTo):
-    logging.basicConfig(filename='downloader_zbruc.log',level=logging.INFO,
-            format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
-    date = datetime.datetime.strptime(sDateFrom, '%d.%m.%Y').date()
-    dateTo = datetime.datetime.strptime(sDateTo, '%d.%m.%Y').date()
-
-    dateList = []
-
-    #for strDate in strDateList:
-    #  dateList.append(datetime.datetime.strptime(strDate, '%Y-%m-%d').date())
-
-    while (date < dateTo):
-      dateList.append(date)
-      date += datetime.timedelta(days=1)
-
-    for date in dateList:
-      content = self.fb2(date)
-      if len(content) > 0:
-        with open(self.rootPath+'/zbruc/'+str(date.year)+'/zbruc_'+str(date)+'.fb2', "w") as fb2_file:
-          fb2_file.write(content)
-      else:
-          print ('No articles for ' + date.strftime('%d.%m.%Y'))
-          logging.warn('No articles for ' + date.strftime('%d.%m.%Y'))
-      date += datetime.timedelta(days=1)
-    logging.info("Job completed")
-"""
-downloader = Downloader()
-
-logging.basicConfig(filename='downloader_zbruc.log',level=logging.INFO,
-        format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
-
-strdate = '31.12.1890'
-date = datetime.datetime.strptime(strdate, '%d.%m.%Y').date()
-dateTo = datetime.datetime.strptime('01.01.1892', '%d.%m.%Y').date()
-
-strDateList = ['1888-12-31','1889-12-31']
-
-dateList = []
-
-for strDate in strDateList:
-  dateList.append(datetime.datetime.strptime(strDate, '%Y-%m-%d').date())
-
-while (date < dateTo):
-  dateList.append(date)
-  date += datetime.timedelta(days=1)
-
-
-#print(dateList)
-
-for date in dateList:
-  content = downloader.fb2(date)
-  if len(content) > 0:
-    with open(str(date.year)+'/zbruc_'+str(date)+'.fb2', "w") as fb2_file:
-      fb2_file.write(content)
-  else:
-      print ('No articles for ' + date.strftime('%d.%m.%Y'))
-
-
-""
-logging.basicConfig(filename='downloader_zbruc_debug.log',level=logging.DEBUG)
-#downloader.getNewsForDate('21.01.2011')
-article = downloader.loadArticle('http://zbruc.eu/node/1332')
-print(article.info())
-"""
+if __name__ == '__main__':
+  run()
