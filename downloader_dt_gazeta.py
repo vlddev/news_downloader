@@ -33,7 +33,7 @@ def run():
     while (num <= currentIssueNum):
       content = downloader.fb2(num)
       if len(content) > 0:
-        with open(downloader_common.rootPath+'/dt_gazeta/2018/dt_gazeta_'+str(num)+'.fb2', "w") as fb2_file:
+        with open(downloader_common.rootPath+'/dt_gazeta/2019/dt_gazeta_'+str(num)+'.fb2', "w") as fb2_file:
           fb2_file.write(content)
       num += 1
 
@@ -247,10 +247,13 @@ class Downloader(object):
     lastIssueFolder = downloader_common.rootPath+'/dt_gazeta'
     if os.path.isdir(curYearFolder): #folder for current year exists
         lastIssueFolder = curYearFolder
+        if len(os.listdir(lastIssueFolder)) == 0: # folder for current year is empty
+          lastIssueFolder = prevYearFolder
     elif os.path.isdir(prevYearFolder): #folder for previous year exists:
         lastIssueFolder = prevYearFolder
     else:
         return 1
+
 
     lastIssueNr = 1
     for issueFile in os.listdir(lastIssueFolder):

@@ -42,7 +42,7 @@ class Article(object):
         self.dtStr = val
       elif isinstance(val, list):
         self.dtStr = val[0]
-      m = re.search('(\d{1,2}:\d{2})', self.dtStr)
+      m = re.search(r'(\d{1,2}:\d{2})', self.dtStr)
       if m is not None:
         self.timeStr = m.group(0)
         if len(self.timeStr) == 4:

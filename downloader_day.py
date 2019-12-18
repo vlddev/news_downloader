@@ -42,7 +42,7 @@ def run():
                 print("No content for num %d, year %d." % (num, year))
                 logging.warning("No content for num %d, year %d." % (num, year))
       except KeyboardInterrupt:
-        sys.exit("Download interrrupted.")
+        sys.exit("Download interrupted.")
       except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         traceback.print_exception(exc_type, exc_value, exc_traceback)
@@ -82,7 +82,7 @@ def runWithParams():
                 print("No content for num %d, year %d." % (num, year))
                 logging.warning("No content for num %d, year %d." % (num, year))
       except KeyboardInterrupt:
-        sys.exit("Download interrrupted.")
+        sys.exit("Download interrupted.")
       except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         traceback.print_exception(exc_type, exc_value, exc_traceback)
@@ -101,8 +101,8 @@ def runUrl():
         with open(("2017/%s.fb2" % (noUrlPart)), "w") as fb2_file:
             fb2_file.write(content)
     else:
-        print("No content for num %d, year %d." % (num, year))
-        logging.warning("No content for num %d, year %d." % (num, year))
+        print("No content for noUrlPart %s." % (noUrlPart))
+        logging.warning("No content for noUrlPart %s." % (noUrlPart))
 
 def test():
     downloader = Downloader()
@@ -247,12 +247,12 @@ class Downloader(object):
         cmd = self.getNumDateCmd.format(url)
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
         result = p.communicate()[0].decode('utf-8')
-        result = result[:10].strip() # date in format mm/dd/yyyy
+        result = result[:10].strip() # date in format dd/mm/yyyy
         deltaNum += 1
     if len(result) < 1: #no such URL or no articles
         return None
     # get date from result
-    self.numDate = datetime.datetime.strptime(result, '%m/%d/%Y').date()
+    self.numDate = datetime.datetime.strptime(result, '%d.%m.%Y').date()
 
     for pageNum in range(0, 3):
         # replace {0} with url

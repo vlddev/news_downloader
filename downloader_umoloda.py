@@ -289,6 +289,8 @@ class Downloader(object):
     lastIssueFolder = downloader_common.rootPath+'/umoloda'
     if os.path.isdir(curYearFolder) and len(os.listdir(curYearFolder)) > 0: # folder for current year exists
       lastIssueFolder = curYearFolder
+      if len(os.listdir(lastIssueFolder)) == 0: # folder for current year is empty
+        lastIssueFolder = prevYearFolder
     elif os.path.isdir(prevYearFolder) and len(os.listdir(prevYearFolder)) > 0: # folder for previous year exists:
       lastIssueFolder = prevYearFolder
     else:

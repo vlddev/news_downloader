@@ -17,7 +17,7 @@ def run():
     logging.basicConfig(filename='downloader_dt_news.log',level=logging.INFO,
       format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-    downloader.load('26.02.2016', '01.09.2018')
+    downloader.load('02.01.2019', '01.09.2019')
 
 def test():
     rootPath = downloader_common.rootPath

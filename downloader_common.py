@@ -68,7 +68,7 @@ class AbstractDownloader(object):
 
   def __init__(self, siteName):
     self.rootPath = rootPath
-    self.maxDownloadThreads = 30
+    self.maxDownloadThreads = 10
     self.siteName = siteName
 
   def fb2(self, date):

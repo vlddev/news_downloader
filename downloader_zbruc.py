@@ -13,10 +13,10 @@ def run():
     logging.basicConfig(filename='downloader_zbruc.log', level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
     
-    #downloader.loadThreaded('01.09.1893', '31.12.1893')
-    #downloader.loadThreaded('01.09.1918', '01.12.1918')
-    #downloader.loadThreaded('01.09.1943', '31.12.1943')
-    downloader.loadThreaded('01.03.2013', '01.01.2019')
+    #downloader.loadThreaded('01.01.1894', '01.09.1894')
+    #downloader.loadThreaded('01.12.1918', '01.09.1919')
+    downloader.loadThreaded('01.01.1944', '01.09.1944')
+    #downloader.loadThreaded('01.01.2019', '01.09.2019')
 
 
 def test():

@@ -10,13 +10,14 @@ import downloader_common
 
 def mode1():
     rootPath = downloader_common.rootPath
-    dateFrom = '18.12.2018'
-    dateTo = '01.01.2019'
+    dateFrom = '01.01.2019'
+    dateTo = '01.07.2019'
 
     dlModules = [
-        'downloader_champion', 'downloader_up_news', 'downloader_epravda', 'downloader_eurointegration',
-        'downloader_dt_news', 'downloader_gazeta_ua', 'downloader_lb',
-        'downloader_unian', 'downloader_zaxid', 'downloader_zik'
+        'downloader_up_news',  'downloader_eurointegration',
+        'downloader_gazeta_ua', 'downloader_lb',
+        'downloader_unian', 'downloader_zaxid', 'downloader_zik',
+        # 'downloader_champion', 'downloader_epravda', 'downloader_dt_news'
     ]
 
     for dlModule in dlModules:
@@ -94,7 +95,7 @@ def mode4():
             job = threading.Thread(
                 target=downloader.load, args=(dateFrom, dateTo))
             job.start()
-        except BaseException as exc:
+        except BaseException :
             exc_type, exc_value, exc_traceback = sys.exc_info()
             logging.error("Error in " + dlModule + ": ", exc_type)
             print("Error in " + dlModule + ": ", exc_type)
@@ -112,4 +113,4 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s',
     datefmt='%d.%m.%Y %H:%M:%S')
-mode1()
+mode3()
