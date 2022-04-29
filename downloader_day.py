@@ -49,13 +49,17 @@ def run():
         sys.exit("Unexpected error:  "+ exc_type)
       num += 1
 
-def runWithParams():
+def runByNoWithParams():
     downloader = Downloader()
 
     #2017 96 154
-    year = int(sys.argv[1])
-    num = int(sys.argv[2]) #2016 -
-    lastNum = int(sys.argv[3])+1
+    #year = int(sys.argv[1])
+    #num = int(sys.argv[2]) 
+    #lastNum = int(sys.argv[3])+1
+
+    year = 2022
+    num = 1
+    lastNum = 13
 
     #while (num < lastNum): #253
     #    strNumList.append(str(num))
@@ -68,7 +72,7 @@ def runWithParams():
             format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
     #for num in strNumList
-    while (num < lastNum): #253
+    while (num < lastNum): 
       try:
         fname = ("%d/day_%03d.fb2" % (year, num))
         if os.path.isfile(fname):
@@ -76,7 +80,10 @@ def runWithParams():
         else:
             content = downloader.fb2(num, year)
             if len(content) > 0:
-                with open((downloader_common.rootPath+'/day/'+"%d/day_%03d.fb2" % (year, num)), "w") as fb2_file:
+                fileDate = str(num)
+                if downloader.numDate is not None:
+                    fileDate = str(downloader.numDate)
+                with open(downloader_common.rootPath+f'/day/{year}/day_{fileDate}.fb2', "w") as fb2_file:
                     fb2_file.write(content)
             else:
                 print("No content for num %d, year %d." % (num, year))
@@ -89,16 +96,68 @@ def runWithParams():
         sys.exit("Unexpected error:  "+ exc_type)
       num += 1
 
+def runByDate():
+    downloader = Downloader()
+
+    ukrMonthDict = {1:"sichnya", 2:"lyutogo", 3:"bereznya",
+                 4:"kvitnya", 5:"travnya", 6:"chervnya",
+                 7:"lypnya", 8:"serpnya", 9:"veresnya",
+                 10:"zhovtnya", 11:"lystopada", 12:"grudnya"}
+
+    # 31-sichnya-2022
+    # 24-lyutogo-2022
+    # 31-bereznya-2022
+    # 27-kvitnya-2022
+
+    # 28-lypnya-2021
+    # 30-serpnya-2021
+    # 28-veresnya-2021
+    # 27-zhovtnya-2021
+    # 29-lystopada-2021
+    # 30-grudnya-2021
+    start_date = datetime.date(2022, 1, 1)
+    end_date = datetime.date(2022, 4, 25)
+    cur_date = start_date
+
+    logging.basicConfig(filename='downloader_day_'+str(start_date.year)+'.log',level=logging.INFO,
+            format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
+
+    #for num in strNumList
+    while (cur_date < end_date): 
+      print(str(cur_date))
+      try:
+        fileDate = cur_date.isoformat()
+        fname = downloader_common.rootPath+f'/day/{cur_date.year}/day_{fileDate}.fb2'
+        if os.path.isfile(fname):
+            print ("File %s exists, get next." % fname)
+        else:
+            dateUrlPart = f'{cur_date.day}-{ukrMonthDict[cur_date.month]}-{cur_date.year}'
+            content = downloader.fb2ForUrl(dateUrlPart)
+            if len(content) > 0:
+                with open(fname, "w") as fb2_file:
+                    fb2_file.write(content)
+            else:
+                print(f"No content for date {fileDate}")
+                logging.warning(f"No content for date {fileDate}")
+      except KeyboardInterrupt:
+        sys.exit("Download interrupted.")
+      except:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        traceback.print_exception(exc_type, exc_value, exc_traceback)
+        sys.exit("Unexpected error:  "+ exc_type)
+      cur_date += datetime.timedelta(days=1)
+
+
 def runUrl():
     downloader = Downloader()
 
     logging.basicConfig(filename='downloader_day.log',level=logging.INFO,
             format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-    noUrlPart = 'no65-2016-0'
+    noUrlPart = '28-lypnya-2021'
     content = downloader.fb2ForUrl(noUrlPart)
     if len(content) > 0:
-        with open(("2017/%s.fb2" % (noUrlPart)), "w") as fb2_file:
+        with open(("2021/%s.fb2" % (noUrlPart)), "w") as fb2_file:
             fb2_file.write(content)
     else:
         print("No content for noUrlPart %s." % (noUrlPart))
@@ -322,7 +381,7 @@ class Downloader(object):
     if len(result) < 1: #no such URL or no articles
         return None
     # get date from result
-    self.numDate = datetime.datetime.strptime(result, '%m/%d/%Y').date()
+    self.numDate = datetime.datetime.strptime(result, '%d.%m.%Y').date()
 
     for pageNum in range(0, 3):
         # replace {0} with url
@@ -468,20 +527,14 @@ class Downloader(object):
     ret += '\n </document-info>'
     ret += '\n</description>'
     ret += '\n<body>'
-    for article in articleList:
-      try:
-        ret += '\n' + article.fb2()
-      except:
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        print ("Unexpected error: ", exc_type)
-        traceback.print_exception(exc_type, exc_value, exc_traceback)
+    ret += self.articleListToStr(articleList)
     ret += '\n</body>'
     ret += '\n</FictionBook>'
     return ret
 
   def fb2(self, num, year):
     today = datetime.date.today()
-    self.numUrl = '/uk/arhiv/no%d-%d' % (num, year)
+    self.numUrl = f'/uk/arhiv/no{num}-{year}'
     articleList = self.getNewsForNumber(num, year)
     url = self.baseUrl + self.numUrl
     if articleList is None:
@@ -508,16 +561,23 @@ class Downloader(object):
     ret += '\n </document-info>'
     ret += '\n</description>'
     ret += '\n<body>'
+    ret += self.articleListToStr(articleList)
+    ret += '\n</body>'
+    ret += '\n</FictionBook>'
+    return ret
+
+  def articleListToStr(self, articleList):
+    ret = []
     for article in articleList:
       try:
-        ret += '\n' + article.fb2()
+        ret.append('\n')
+        ret.append(article.fb2())
       except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         print ("Unexpected error: ", exc_type)
         traceback.print_exception(exc_type, exc_value, exc_traceback)
-    ret += '\n</body>'
-    ret += '\n</FictionBook>'
-    return ret
+    return ''.join(ret)
+
 
   def getCurrentIssueNr(self):
     curIssueNr = -1
@@ -584,4 +644,5 @@ class Downloader(object):
     logging.info("Job completed")
 
 if __name__ == '__main__':
-    run()
+    runByDate()
+    #test()

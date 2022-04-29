@@ -15,7 +15,10 @@ def run():
     logging.basicConfig(filename='downloader_tyzhden.log', level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-    downloader.load(581, 616)
+    downloader.load(633, 683)
+    # TODO use pyppeteer or puppeteer to download.
+    # * https://www.usetrove.io/blog/headless-web-scraping-with-python/
+    # * https://github.com/pyppeteer/pyppeteer
 
 
 def test():
@@ -97,7 +100,8 @@ class Article(downloader_common.BaseArticle):
 class Downloader(object):
 
   def __init__(self):
-    self.baseUrl = 'https://tyzhden.ua'
+    #self.baseUrl = 'https://tyzhden.ua'
+    self.baseUrl = 'https://old.tyzhden.ua'
     self.getLinksCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="ap2"]//div[@class="bf2 ap6"]//@href\''
     self.getNumDateCmd = downloader_common.XIDEL_CMD + ' --xpath \'//h1[@class="ap1"]//span[@class="bf2 ap1"]\''
     self.numDate = None
@@ -139,7 +143,7 @@ class Downloader(object):
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for ln in p.stdout:
       line = ln.decode('utf-8').strip()
-      articleUrl = line
+      articleUrl = line.replace('https://tyzhden.ua/','https://old.tyzhden.ua/')
       if '//' in line[10:] :
         articleUrl = line[:10] + line[10:].replace("//", "/Columns/50/")
         print("strange URL: "+line+" trying "+articleUrl)

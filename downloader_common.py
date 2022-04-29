@@ -6,7 +6,7 @@ import concurrent.futures
 
 USER_AGENT="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1"
 XIDEL_CMD='xidel "{0}" -s --user-agent="'+USER_AGENT+'"'
-rootPath = '/home/vlad/Dokumente/python/news_lib'
+rootPath = '../../news_lib'
 
 def relpaceHtmlEntities(val):
   if val is not None and isinstance(val, str):
@@ -66,9 +66,9 @@ class BaseArticle(object):
 
 class AbstractDownloader(object):
 
-  def __init__(self, siteName):
+  def __init__(self, siteName, maxDownloadThreads=10):
     self.rootPath = rootPath
-    self.maxDownloadThreads = 10
+    self.maxDownloadThreads = maxDownloadThreads
     self.siteName = siteName
 
   def fb2(self, date):

@@ -11,11 +11,9 @@ import downloader_common
 
 def run():
     downloader = Downloader()
-
     logging.basicConfig(filename='downloader_unian.log', level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
-
-    downloader.loadThreaded('18.12.2018', '01.01.2019')
+    downloader.loadThreaded('16.05.2019', '16.12.2019')
 
 
 def run_old():
@@ -40,17 +38,17 @@ def test():
     rootPath = downloader_common.rootPath
     downloader = Downloader()
 
-    logging.basicConfig(filename='downloader_unian.log',level=logging.DEBUG,
+    logging.basicConfig(filename='downloader_unian.test.log',level=logging.DEBUG,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-    article = downloader.loadArticle('https://www.unian.ua/incidents/10064507-u-hmelnickomu-suditimut-bandu-shcho-trujila-lyudey-zaradi-nazhivi.html')
+    article = downloader.loadArticle('https://www.unian.ua/pogoda/news/10550316-u-kiyevi-zavtra-bez-opadiv-temperatura-do-240.html')
     print(article.info())
 
 
 def runUrl():
     rootPath = '/home/vlad/Dokumente/python/news_lib'
     downloader = Downloader()
-    article = downloader.loadArticle('https://sport.unian.ua/hockey/2137881-kremenchuk-zakinuv-vovkam-7-shayb-i-rozgromiv-brovarsku-komandu.html')
+    article = downloader.loadArticle('https://www.unian.ua/world/10554012-skandal-v-avstriji-vice-kancler-krajini-podav-u-vidstavku-cherez-skandalne-video-z-bagatoyu-rosiyankoyu.html')
     print(article.info())
 
 class Article(object):
@@ -102,7 +100,7 @@ class Article(object):
             # remove empty lines
             for line in text.split('\n'):
                 proLine = line.strip()
-                if len(proLine) > 0:
+                if len(proLine) > 0 and not proLine.startswith('Читайте також') and not proLine.startswith('Докладний прогноз погоди у вашому місті'):
                     self.body.append(proLine)
 
     def info(self):
@@ -128,12 +126,12 @@ class Article(object):
 
 
 class Downloader(downloader_common.AbstractDownloader):
-    def __init__(self, rootPath=''):
+    def __init__(self, rootPath='', maxDownloadThreads=1):
         self.baseUrl = 'https://www.unian.ua'
-        self.getLinksCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="publications-archive"]//div[@class="gallery-item news-inline-item"]//a[@class="publication-title"]/@href\''
+        self.getLinksCmd = downloader_common.XIDEL_CMD + ' --xpath \'//div[@class="content-column"]//div[@class="list-thumbs__info"]//a[@class="list-thumbs__title"]/@href\''
         # http://www.unian.ua/news/archive/20060319
         # self.rootPath = rootPath  # '/home/vlad/Dokumente/python/news_lib'
-        super().__init__('unian')
+        super().__init__('unian', maxDownloadThreads)
 
     def getUrlsForDate(self, date):
         url = self.baseUrl + '/news/archive/' + date.strftime('%Y%m%d')
@@ -217,7 +215,7 @@ class Downloader(downloader_common.AbstractDownloader):
         urls = self.getUrlsForDate(date)
         print("Found {0} articles. Start downloading.".format(len(urls)))
         # use a with statement to ensure threads are cleaned up promptly
-        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
             # Start the load operations and mark each future with its URL
             futureToUrl = {executor.submit(self.loadArticle, url): url for url in urls}
             for future in concurrent.futures.as_completed(futureToUrl):
@@ -236,9 +234,7 @@ class Downloader(downloader_common.AbstractDownloader):
                             elif len(article.timeStr) > 0 and len(
                                     article.title) > 0:
                                 bAddToList = False
-                                logging.error(
-                                    "IGNORE: Empty article with title and time. URL: "
-                                    + url)
+                                logging.error("IGNORE: Empty article with title and time. URL: " + url)
                             else:
                                 bAddToList = False
                                 logging.error("Article is empty. URL: " + url)
@@ -246,9 +242,7 @@ class Downloader(downloader_common.AbstractDownloader):
                                 # sys.exit("Article is empty. URL: "+ line)
                         if bAddToList:
                             if len(article.body) == 1:
-                                logging.warning(
-                                    "Article (length = " + str(len(text)) +
-                                    ") has one paragraph. URL: " + url)
+                                logging.warning("Article (length = " + str(len(text)) + ") has one paragraph. URL: " + url)
                             articleList.append(article)
                     else:
                         # exit
@@ -258,6 +252,7 @@ class Downloader(downloader_common.AbstractDownloader):
                     raise
                 except BaseException:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
+                    logging.error("Unexpected error in Article. URL: " + url)
                     print("Unexpected error: ", exc_type)
                     traceback.print_exception(exc_type, exc_value, exc_traceback)
         # order articles by time
@@ -266,12 +261,12 @@ class Downloader(downloader_common.AbstractDownloader):
     def loadArticle(self, url):
         cmd = (
             downloader_common.XIDEL_CMD.format(url) +
-            ' --xpath \'//div[@class="article-text"]//div[@class="item time no-padding"]\''  # datetime in format hh:mi, dd Month yyyy
+            ' --xpath \'//div[@class="article-text"]//div[@class="item time no-padding" or @class="item time"]\''  # datetime in format hh:mi, dd Month yyyy
             ' --xpath \'//div[@class="article-text"]//h1\''  # title
             ' --xpath \'//div[@class="article-text"]//h2\''  # summary
             # ' --xpath \'//div[@class="article-text"]//span[@itemprop="articleBody"]\'' # article body
             ' --output-format=json-wrapped')  # output as json
-        if 'pogoda.unian.ua/' in url:
+        if 'unian.ua/pogoda' in url:
             cmd = (
                 downloader_common.XIDEL_CMD.format(url) +
                 ' --xpath \'//div[@class="news-details__info newsDetailsInfo news-container"]//div[@class="newsDetailsInfo__dateTime time"]\''  # datetime in format hh:mi, dd Month yyyy
@@ -289,7 +284,7 @@ class Downloader(downloader_common.AbstractDownloader):
         # print(result)
         jsonArt = json.loads(result)
 
-        if len(jsonArt) > 0 and 'pogoda.unian.ua/' not in url:
+        if len(jsonArt) > 0 and 'unian.ua/pogoda' not in url:
             cmd = (
                 downloader_common.XIDEL_CMD.format(url) +
                 ' --xpath \'//div[@class="article-text"]//span[@itemprop="articleBody"]//p\''
@@ -399,7 +394,8 @@ class Downloader(downloader_common.AbstractDownloader):
         # strdate = '%d.%d.%d' % (date.day, date.month, date.year)
         today = datetime.date.today()
         url = self.baseUrl + '/news/archive/' + date.strftime('%Y%m%d')
-        articleList = self.getNewsForDate(date)
+        articleList = self.getNewsForDateThreaded(date)
+        #articleList = self.getNewsForDate(date)
         if len(articleList) < 1:
             return ''
         ret = '<?xml version="1.0" encoding="utf-8"?>'

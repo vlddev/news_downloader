@@ -16,7 +16,7 @@ def run():
     logging.basicConfig(filename='downloader_gazeta_ua.log', level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-    downloader.loadThreaded('08.02.2017', '09.02.2017')
+    downloader.loadThreaded('02.07.2019', '16.12.2019')
 
 def test():
     # rootPath = downloader_common.rootPath

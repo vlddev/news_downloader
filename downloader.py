@@ -10,14 +10,14 @@ import downloader_common
 
 def mode1():
     rootPath = downloader_common.rootPath
-    dateFrom = '01.01.2019'
-    dateTo = '01.07.2019'
+    dateFrom = '01.09.2019'
+    dateTo = '16.12.2019'
 
     dlModules = [
-        'downloader_up_news',  'downloader_eurointegration',
-        'downloader_gazeta_ua', 'downloader_lb',
+        'downloader_dt_news', 
+        #'downloader_gazeta_ua', 'downloader_lb',
         'downloader_unian', 'downloader_zaxid', 'downloader_zik',
-        # 'downloader_champion', 'downloader_epravda', 'downloader_dt_news'
+        # 'downloader_champion', 'downloader_epravda', 'downloader_up_news', 'downloader_eurointegration'
     ]
 
     for dlModule in dlModules:
