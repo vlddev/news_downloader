@@ -307,7 +307,7 @@ class Downloader(object):
 
   def load(self):
     # get last downloaded number
-    num = self.getLastDownloadedIssueNr() + 1
+    num = 3478 # self.getLastDownloadedIssueNr() + 1
 
     currentIssueNum = self.getCurrentIssueNr()
     print ("download issues from {0} to {1}".format(num, currentIssueNum))
