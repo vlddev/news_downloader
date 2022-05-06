@@ -10,16 +10,14 @@ import stats
 import re
 import downloader_common
 
-# TODO reload files with "404 Not Found" (2006/up_news_2006-03-29.fb2 ...)
-
 def run():
     downloader = Downloader()
 
     logging.basicConfig(filename='downloader_up_news.log', level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-    downloader.loadThreaded('02.09.2018', '01.01.2019')
-    #downloader.loadThreaded('01.09.2018', '02.09.2018')
+    downloader.loadThreaded('30.03.2006', '31.03.2006')
+    #downloader.loadThreaded('01.10.2020', '02.10.2020')
 
 def run_old():
     rootPath = downloader_common.rootPath
@@ -27,7 +25,7 @@ def run_old():
     logging.basicConfig(filename='downloader_up_news.log',level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-    downloader.load('01.04.2018', '02.04.2018')
+    downloader.load('13.05.2018', '02.04.2018')
 
 def test():
     rootPath = downloader_common.rootPath
@@ -125,9 +123,8 @@ class Downloader(downloader_common.AbstractDownloader):
     # xidel have problems to download content from pravda.com.ua.
     # use wget for downloading and pipe content to xidel
     self.wgetPipeCmd = 'wget -O - -o /dev/null "{0}" | xidel - -s '
-    self.getLinksCmd = self.wgetPipeCmd + ' --xpath \'//div[@class="block block_news_all"]//div[@class="news news_all"]//a/@href\' '
-    #self.rootPath = rootPath #'/home/vlad/Dokumente/python/news_lib'
-    super().__init__('up_news')
+    self.getLinksCmd = self.wgetPipeCmd + ' --xpath \'//div[@class="container_sub_news_list_wrapper mode1"]//div[@class="article_content"]//a/@href\' '
+    super().__init__('up_news', maxDownloadThreads=1)
 
   def getNewsForDate(self, date):
     print('get news for ' + date.strftime('%d.%m.%Y'))
@@ -227,16 +224,30 @@ class Downloader(downloader_common.AbstractDownloader):
     # order articles by time
     return sorted(articleList, key=lambda x: x.timeStr)
 
+  def execCmd(self, cmd, timeout=15, retry=100):
+    result = None
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    bRead = False
+    retryCnt = 0
+    while not bRead and retryCnt < retry:
+      try:
+        result = p.communicate(timeout=timeout)[0].decode('windows-1251')
+        bRead = True
+      except subprocess.TimeoutExpired:
+        print ("Timeout, trying again")
+        retryCnt += 1
+        p.kill()
+    return result
+
   def loadArticle(self, url):
     cmd = (self.wgetPipeCmd.format(url) +
-           ' --xpath \'//div[@class="post post_news"]//div[@class="post_news__date"]\'' #date
-           ' --xpath \'//div[@class="post post_news"]//h1[@class="post_news__title"]\'' #title
-           ' --xpath \'//div[@class="post post_news"]//div[@class="post_news__text dummy"]\'' #empty text
+           ' --xpath \'//article[@class="post"]//div[@class="post_time"]\'' #date
+           ' --xpath \'//article[@class="post"]//h1[@class="post_title"]\'' #title
+           ' --xpath \'//article[@class="post"]//div[@class="post_news__text dummy"]\'' #empty text
            ' --output-format=json-wrapped' #output as json
            ' --output-encoding=windows-1251')  #pravda.com.ua uses encoding=windows-1251
     #print('cmd: '+cmd)
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-    result = p.communicate()[0].decode('windows-1251')
+    result = self.execCmd(cmd)
     #print(result)
     jsonArt = json.loads(result)
 
@@ -244,7 +255,7 @@ class Downloader(downloader_common.AbstractDownloader):
       return None
 
     aTextCmd = (self.wgetPipeCmd.format(url) +
-       ' --xpath \'//div[@class="post post_news"]//div[@class="post_news__text"]\'' #article text
+       ' --xpath \'//article[@class="post"]//div[@class="post_text"]\'' #article text
        ' --output-format=html' #output as html
        ' --output-encoding=windows-1251')  #pravda.com.ua uses encoding=windows-1251
     jsonArt[2] = self.loadArticleTextFromHtml(aTextCmd)
@@ -295,8 +306,9 @@ class Downloader(downloader_common.AbstractDownloader):
     return article
 
   def loadArticleTextFromHtml(self, xidelCmd):
-    p = subprocess.Popen(xidelCmd, shell=True, stdout=subprocess.PIPE)
-    result = p.communicate()[0].decode('windows-1251')
+    #p = subprocess.Popen(xidelCmd, shell=True, stdout=subprocess.PIPE)
+    #result = p.communicate()[0].decode('windows-1251')
+    result = self.execCmd(xidelCmd)
     logging.debug(">> loadArticleTextFromHtml()")
     logging.debug(result)
     #print(result)
