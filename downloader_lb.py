@@ -15,10 +15,10 @@ def run():
     logging.basicConfig(filename='downloader_lb.log', level=logging.INFO,
         format='%(asctime)s %(levelname)s\t%(module)s\t%(message)s', datefmt='%d.%m.%Y %H:%M:%S')
 
-    downloader.loadThreaded('02.07.2019', '16.12.2019')
+    downloader.loadThreaded('12.01.2022', '01.05.2022')
 
 def run_old():
-    rootPath = '/home/vlad/Dokumente/python/news_lib'
+    rootPath = 'news_lib'
     downloader = Downloader(rootPath)
     #logging.basicConfig(filename='downloader_debug.log',level=logging.DEBUG)
 
@@ -118,10 +118,9 @@ class Article(object):
 class Downloader(downloader_common.AbstractDownloader):
 
   def __init__(self, rootPath=''):
-    self.baseUrl = 'http://ukr.lb.ua'
+    self.baseUrl = 'https://lb.ua'
     self.getLinksCmd = downloader_common.XIDEL_CMD +' --xpath \'//ul[@class="lenta"]/li/div[@class="title"]/a/@href\''
-    self.rootPath = rootPath #'/home/vlad/Dokumente/python/news_lib'
-    super().__init__('lb')
+    super().__init__('lb',maxDownloadThreads=1)
 
   def getNewsForDate(self, date):
     print('get news for ' + date.strftime('%d.%m.%Y'))
@@ -140,7 +139,7 @@ class Downloader(downloader_common.AbstractDownloader):
         print ('ignore url (already loaded): '+ line)
         continue
 
-      if len(line) > 0 and line.startswith("http://ukr.lb.ua/"):
+      if len(line) > 0 and line.startswith("https://lb.ua/"):
         print ('load article: ' + line)
         try:
           article = self.loadArticle(line)
